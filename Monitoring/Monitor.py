@@ -25,8 +25,9 @@ def PerformIndependentCascade(graph: networkx.DiGraph, sources: list, max_iter=-
                 if node not in infected_nodes:
                     weight = graph.get_edge_data(infected, node)["weight"]
                     if random.random() < weight:
-                        infected_nodes.add(node)
                         infected_at[iteration].add(node)
+        for node in infected_at[iteration]:
+            infected_nodes.add(node)
 
         # Check for termination condition
         if len(infected_at[iteration]) == 0 or (max_iter != -1 and iteration >= max_iter):
@@ -43,8 +44,8 @@ def GetInfectedSubgraph(graph: networkx.DiGraph, sources: list):
     :return:
     """
     infected_graph: networkx.DiGraph
-    infected = PerformIndependentCascade(graph, sources)
-    nodes = [infected[T] for T in infected.keys()]
+    infected_nodes, _ = PerformIndependentCascade(graph, sources)
+    nodes = [node for node in infected_nodes]
     return graph.subgraph(nodes)
 
 
