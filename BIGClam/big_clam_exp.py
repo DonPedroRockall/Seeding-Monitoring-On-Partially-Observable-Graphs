@@ -85,8 +85,8 @@ if __name__ == "__main__":
     bigClamExp = BigClamExp(A, K)
     bigClam = BigClam(A, K)
 
-    Fexp = bigClamExp.fit(A, K)
-    F = bigClam.fit(A, K)
+    Fexp = bigClamExp.fit(A)
+    F = bigClam.fit(A)
 
     mse = np.linalg.norm((A - F.dot(F.T)))
     FF_exp = Fexp.dot(Fexp.T)

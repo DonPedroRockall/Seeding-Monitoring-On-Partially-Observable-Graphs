@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import scipy as sp
-import cPickle
 from Extends import draw_groups, getSeedCenters, conductanceLocalMin, progress
 from multiprocessing import Pool, Process
 import cPickle
@@ -70,7 +69,7 @@ class BigClam(object):
         D[u] = Fu
         t = self.sumF.copy()
         self.update_sumF(D[u], F[u])
-        ans = self.loglikelihood(D, u)
+        ans = self.loglikelihood(D)
         self.sumF = t
         return ans
 
@@ -238,7 +237,7 @@ class BigClam(object):
 
     def backtrackingLineSearch(self, u, F, deltaV, gradV, alpha=0.1, beta=0.3, MaxIter=15):
         stepSize = 0.1 if not self.weighted else 0.1
-        stepSize = stepSize if self.last_step == None else min(self.last_step / beta, stepSize)
+        stepSize = stepSize if self.last_step is None else min(self.last_step / beta, stepSize)
         LLH = self.loglikelihood_u(F, u)
         for i in range(MaxIter):
             D = self.step(F[u], stepSize, deltaV)
@@ -352,7 +351,7 @@ def draw_bigClam_res():
     sparsity_coef = 1
     bigClam = BigClam(A, K, sparsity_coef=sparsity_coef)
 
-    F = bigClam.fit(A, K)
+    F = bigClam.fit(A)
 
     draw_groups(A, F, ids, names, 'BigClamK_{}sp'.format(sparsity_coef))
 

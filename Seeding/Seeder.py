@@ -18,7 +18,7 @@ def BasicGreedy(Graph: networkx.Graph, k):
         max = -math.inf
         argmax = None
         for u in set(Graph.nodes()).difference(S):
-            diff = SocialInfluenceFunction(S.union(u)) - SocialInfluenceFunction(S)
+            diff = SocialInfluenceFunction() - SocialInfluenceFunction()
             if diff > max:
                 max = diff
                 argmax = u
