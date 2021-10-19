@@ -4,7 +4,7 @@ from __future__ import division
 import networkx as nx
 import random
 import pickle
-from EdmondsMemoryOpt import maximum_spanning_arborescence
+from EdmondsMemoryOpt import maximum_spanning_arborescence_manual
 from independent_cascade_opt import independent_cascade, getInfectedSubgraph, getInfectedCalibratedSubgraph
 from imeterOpt import IMeterSort
 
@@ -34,7 +34,7 @@ def readDirectWeightedGraph(pathname):
     for line in infile:
         if "#" not in line:
             u, v, p = line.split()
-            graph.add_edge(u, v, act_prob=float(p))
+            graph.add_edge(u, v, weight=float(p))
     return graph
 
 
@@ -42,7 +42,7 @@ def makeGraphComplete(graph):
     for u in graph.nodes():
         for v in graph.nodes():
             if (u, v) not in graph.edges():
-                graph.add_edge(u, v, act_prob=0)
+                graph.add_edge(u, v, weight=0)
     return graph
 
 
@@ -56,7 +56,7 @@ def buildGraphOnFile(out_pathname_graph, nodes, edges):
             if u == v or (u, v) in graph.edges():
                 continue
             prob = random.random()
-            graph.add_edge(u, v, act_prob=prob)
+            graph.add_edge(u, v, weight=prob)
             out_file.write(str(u) + '\t' + str(v) + '\t' + str(prob) + '\n')
             edges -= 1
             break
@@ -66,17 +66,17 @@ def buildGraphOnFile(out_pathname_graph, nodes, edges):
 
 def getMyCustomGraph():
     graph = nx.DiGraph()
-    graph.add_edge(0, 1, act_prob=0.5)
-    graph.add_edge(0, 2, act_prob=0.8)
-    graph.add_edge(1, 2, act_prob=0.3)
-    graph.add_edge(1, 3, act_prob=0.4)
-    graph.add_edge(2, 4, act_prob=0.6)
-    graph.add_edge(3, 4, act_prob=0.2)
-    graph.add_edge(4, 0, act_prob=0.7)
+    graph.add_edge(0, 1, weight=0.5)
+    graph.add_edge(0, 2, weight=0.8)
+    graph.add_edge(1, 2, weight=0.3)
+    graph.add_edge(1, 3, weight=0.4)
+    graph.add_edge(2, 4, weight=0.6)
+    graph.add_edge(3, 4, weight=0.2)
+    graph.add_edge(4, 0, weight=0.7)
 
-    graph.add_edge(n, 0, act_prob=random.random())
+    graph.add_edge(n, 0, weight=random.random())
     for j in range(k):
-        graph.add_edge(i, i + j, act_prob=random.random())
+        graph.add_edge(i, i + j, weight=random.random())
     return graph
 
 
@@ -134,7 +134,7 @@ def run_exp(steps, pathname, interval, random_node=None, writer=None):
         return False
 
     start = timer()
-    branch, max_mem_usage = maximum_spanning_arborescence(infected_subgraph, attr='act_prob')
+    branch, max_mem_usage = maximum_spanning_arborescence_manual(infected_subgraph, attr='weight')
     time_algo = timer() - start
     # print 'branch'
     # print list(branch.edges_iter(data='act_prob', default=1))
@@ -195,7 +195,7 @@ def run_exp(steps, pathname, interval, random_node=None, writer=None):
 "Parameters"
 # pathname = 'gnutella/as-caida20070917-Rand.txt'
 # pathname = 'graphs/random_graph1000n2000m'
-pathname_graph = 'graphs/Wiki-Vote-Rand.txt'
+pathname_graph = '../../Datasets/Wiki-Vote-Rand.txt'
 # pathname_graph = 'graphs/epinions.txt'
 steps = 2
 # pathname_graph = 'graphs/random_graph200n10000m'
@@ -208,7 +208,7 @@ pathname_output = 'wiki-vote-results/csv/test_0_step3.csv'
 
 
 # graph = readDirectWeightedGraph(pathname_graph)
-graph = nx.read_edgelist(pathname_graph, create_using=nx.DiGraph(), data=(('act_prob', float),), comments='#')
+graph = nx.read_edgelist(pathname_graph, create_using=nx.DiGraph(), data=(('weight', float),), comments='#')
 
 out_file = open(pathname_output, 'a')
 writer = csv.writer(out_file, delimiter=',')

@@ -30,8 +30,8 @@ def independent_cascade(G, seeds, steps=0):
 
     # init activation probabilities
     for e in DG.edges():
-        # if 'act_prob' not in DG[e[0]][e[1]]:
-        #  DG[e[0]][e[1]]['act_prob'] = 0.1
+        # if 'weight' not in DG[e[0]][e[1]]:
+        #  DG[e[0]][e[1]]['weight'] = 0.1
         if float(DG[e[0]][e[1]]['act_prob']) > 1:
             print(e)
             raise Exception("edge activation probability:", DG[e[0]][e[1]]['act_prob'], "cannot be larger than 1")
@@ -80,7 +80,7 @@ def getInfectedSubgraph(graph, infected_nodes):
     for node in infected_nodes:
         for out_node in graph.out_edges([node]):
             if out_node[1] in infected_nodes:
-                subgraph.add_edge(node, out_node[1], act_prob=graph[node][out_node[1]]['act_prob'])
+                subgraph.add_edge(node, out_node[1], weight=graph[node][out_node[1]]['act_prob'])
 
     return subgraph
 
@@ -91,7 +91,7 @@ def get_infected_subgraph(graph, infected_nodes):
         singleton = True
         for out_node in graph.out_edges([node]):
             if out_node[1] in infected_nodes:
-                subgraph.add_edge(node, out_node[1], act_prob=graph[node][out_node[1]]['act_prob'])
+                subgraph.add_edge(node, out_node[1], weight=graph[node][out_node[1]]['act_prob'])
                 singleton = False
         if singleton:
             subgraph.add_node(node)
@@ -111,7 +111,11 @@ def get_infected_subgraphs(graph, infected_nodes):
             singleton = node
             for out_node in infected_graph.out_edges():
                 if out_node[1] in comp:
-                    subgraph.add_edge(node, out_node[1], act_prob=infected_graph[node][out_node[1]]['act_prob'])
+                    try:
+                        subgraph.add_edge(node, out_node[1], weight=infected_graph[node][out_node[1]]['act_prob'])
+                    except:
+                        print(node)
+                        print(out_node[1])
         if subgraph.size() == 0:
             subgraph.add_node(singleton)
         subgraphs.append(subgraph)
@@ -128,6 +132,6 @@ def getInfectedCalibratedSubgraph(graph, infected_nodes):
                 for neighboor in graph.successors(node):
                     if neighboor not in infected_nodes:
                         prob *= (1 - graph[node][neighboor]['act_prob'])
-                subgraph.add_edge(node, out_node, act_prob=graph[node][out_node]['act_prob'] * prob)
+                subgraph.add_edge(node, out_node, weight=graph[node][out_node]['act_prob'] * prob)
 
     return subgraph

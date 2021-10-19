@@ -107,12 +107,12 @@ model_files = {'COPRA': ['../external/COPRA/COPRA_output.log', '../external/COPR
 
 def worker_models(args):
     A, comms, name = args
-    print '!',
+    print('!',)
     if name != 'groundtruth':
         F = models[name](A, len(comms), name)
     else:
         F = models[name](comms)
-    print '.',
+    print('.',)
     return name, F
     # if name in model_files and save_all:
     #     for filename in model_files[name]:
@@ -124,52 +124,52 @@ def worker_models(args):
     #             f.write('\n')
 
 def worker(iter, mix):
-        res = {name: {key: 0 for key in qual_fun} for name in models}
-        print ' {}:'.format(iter),
-        G, comms = LancichinettiBenchmark(**data_params)
-        if save_all:
-            cur_save_dir = "../data/dumps/all_exp/{:.3f}/".format(mix)
-            enshure_dir(cur_save_dir)
-            cur_save_dir = cur_save_dir + str(iter) + '/'
-            enshure_dir(cur_save_dir)
-            for filename in lanc_bech_files:
-                copyfile('../external/Lancichinetti benchmark/' + filename, cur_save_dir + 'testgraph-' + filename)
-        A = np.array(nx.to_numpy_matrix(G))
-        Fs = pool.map(worker_models, zip([A]*len(models), [comms]*len(models), models.keys()))
-        #Fs = [worker_models((A, comms, name)) for name in models]
+    res = {name: {key: 0 for key in qual_fun} for name in models}
+    print(' {}:'.format(iter),)
+    G, comms = LancichinettiBenchmark(**data_params)
+    if save_all:
+        cur_save_dir = "../data/dumps/all_exp/{:.3f}/".format(mix)
+        enshure_dir(cur_save_dir)
+        cur_save_dir = cur_save_dir + str(iter) + '/'
+        enshure_dir(cur_save_dir)
+        for filename in lanc_bech_files:
+            copyfile('../external/Lancichinetti benchmark/' + filename, cur_save_dir + 'testgraph-' + filename)
+    A = np.array(nx.to_numpy_matrix(G))
+    Fs = pool.map(worker_models, zip([A]*len(models), [comms]*len(models), models.keys()))
+    #Fs = [worker_models((A, comms, name)) for name in models]
 
-        Fs = dict(Fs)
-        # for name in models:
-        #     print '!',
-        #     F = models[name](A, len(comms), name)
-        #     if name in model_files and save_all:
-        #         for filename in model_files[name]:
-        #             copyfile(filename, cur_save_dir + name + '-' + filename.split('/')[-1])
-        #         with file(cur_save_dir + name + '-F', 'w') as f:
-        #             for Fi in F:
-        #                 for j in Fi:
-        #                     f.write('{:.4f},\t'.format(j)),
-        #                 f.write('\n')
-        #     print '.',
-        for name in Fs:
-            for key in qual_fun:
-                try:
-                    if key not in {"1-NMI", "NMI", 'NMI_new'}:
-                        q = qual_fun[key](Fs[name], A)
-                    else:
-                        q = qual_fun[key](Fs[name], A, comms)
-                        if save_all:
-                            for filename in nmi_files:
-                                copyfile('../external/Lancichinetti benchmark/' + filename, cur_save_dir + name + '-' + filename)
-                except:
-                    print 'Some err in ' + name,
-                    q = float('nan')
-                res[name][key] = q
-            if save_all:
-                with file(cur_save_dir + name + '-' 'quals', 'w') as f:
-                    for key in res[name]:
-                        f.write('{}: {}\n'.format(key, res[name][key]))
-        return res
+    Fs = dict(Fs)
+    # for name in models:
+    #     print '!',
+    #     F = models[name](A, len(comms), name)
+    #     if name in model_files and save_all:
+    #         for filename in model_files[name]:
+    #             copyfile(filename, cur_save_dir + name + '-' + filename.split('/')[-1])
+    #         with file(cur_save_dir + name + '-F', 'w') as f:
+    #             for Fi in F:
+    #                 for j in Fi:
+    #                     f.write('{:.4f},\t'.format(j)),
+    #                 f.write('\n')
+    #     print '.',
+    for name in Fs:
+        for key in qual_fun:
+            try:
+                if key not in {"1-NMI", "NMI", 'NMI_new'}:
+                    q = qual_fun[key](Fs[name], A)
+                else:
+                    q = qual_fun[key](Fs[name], A, comms)
+                    if save_all:
+                        for filename in nmi_files:
+                            copyfile('../external/Lancichinetti benchmark/' + filename, cur_save_dir + name + '-' + filename)
+            except:
+                print('Some err in ' + name,)
+                q = float('nan')
+            res[name][key] = q
+        if save_all:
+            with file(cur_save_dir + name + '-' 'quals', 'w') as f:
+                for key in res[name]:
+                    f.write('{}: {}\n'.format(key, res[name][key]))
+    return res
 
 
 def mean(l):
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     #mixing_range = np.linspace(0, 0.5, 3)
     models_res = []
     for i_mix, mix in enumerate(mixing_range):
-        print '{} mix: {}'.format(time(), mix)
+        print('{} mix: {}'.format(time(), mix))
         with file(r'..\external\Lancichinetti benchmark\time_seed.dat', 'w') as f:
             f.write(str(seed))
         data_params['on'] = np.floor(data_params['N'] * mix)
@@ -231,9 +231,9 @@ if __name__ == '__main__':
                      color=colors[i] if name != 'groundtruth' else 'k')
         if indx == 1:
             plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    print
-    print
+    print()
+    print()
     for mix, res in zip(mixing_range, models_res):
         for key in res:
-            print mix, ': ', key, res[key]
+            print(ix, ': ', key, res[key])
     plt.show()

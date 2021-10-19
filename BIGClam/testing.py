@@ -137,8 +137,8 @@ def test_gamma_model():
         gamma_model = BigClamGamma(A, 2, debug_output=False, LLH_output=False)
         F_model = gamma_model.fit()
         output_str = "True: \n{}\nModel estimation:\n{}\nDiff:\n{}\nRMSE/MeanVal:{}\n"
-        print output_str.format(F_true, np.around(F_model.T, 2), np.around(np.abs(F_true - F_model.T), 4),
-                                np.sqrt(np.mean((F_true - F_model.T) ** 2)) / np.mean(F_true))
+        print(output_str.format(F_true, np.around(F_model.T, 2), np.around(np.abs(F_true - F_model.T), 4),
+                                np.sqrt(np.mean((F_true - F_model.T) ** 2)) / np.mean(F_true)))
         plt.figure()
         plt.subplot(131)
         plt.imshow(A, interpolation='none')
@@ -153,8 +153,8 @@ def test_gamma_model():
         gamma_model = BigClamGamma(A, 3, debug_output=False, LLH_output=False)
         F_model = gamma_model.fit()
         output_str = "True: \n{}\nModel estimation:\n{}\nDiff:\n{}\nRMSE/MeanVal:{}\n"
-        print output_str.format(F_true, np.around(F_model.T, 2), np.around(np.abs(F_true - F_model.T), 4),
-                                np.sqrt(np.mean((F_true - F_model.T) ** 2)) / np.mean(F_true))
+        print(output_str.format(F_true, np.around(F_model.T, 2), np.around(np.abs(F_true - F_model.T), 4),
+                                np.sqrt(np.mean((F_true - F_model.T) ** 2)) / np.mean(F_true)))
         plt.figure()
         plt.subplot(131)
         plt.imshow(A, interpolation='none')
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     plt.subplot(1, 5, 3)
     draw_matrix(A, "Agency matix sample (A)")
     x = np.mean(A) * 0.8
-    print x, np.mean(A)
+    print(x, np.mean(A))
     B = A.copy()
     B[B < x] = 0
     C = B.copy()
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     w_model2 = BigClam(C, 3, debug_output=False, LLH_output=True, initF='rand', iter_output=1)
     F_model2, LLH2 = w_model2.fit()
 
-    print len(w_model2.LLH_output_vals)
+    print(len(w_model2.LLH_output_vals))
     plt.figure()
     plt.plot(-np.log(-np.array(w_model2.LLH_output_vals[:3000])))
     draw_res(C, F_true, F_model2)

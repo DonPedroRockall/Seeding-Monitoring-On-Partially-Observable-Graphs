@@ -65,12 +65,12 @@ def draw_groups(A, F, ids=None, names=None, figname = 'NoName', png=True, pdf=Fa
 
     C = F > np.sum(A) / (A.shape[0] * (A.shape[0] - 1))
     indx = np.argmax(F, axis=1)
-    for i in xrange(N):
+    for i in range(N):
         C[i, indx[i]] = True
-    print F
-    print C
+    print(F)
+    print(C)
 
-    comm = [[] for i in xrange(N)]
+    comm = [[] for i in range(N)]
     for x, y in zip(*np.where(C)):
         comm[x].append(y)
     u_comm = np.unique(comm)
@@ -549,11 +549,10 @@ if __name__ == '__main__':
     A = 2.0 * test_example()
     A[2, 1] = 3.0
 
-    print walktrap(A, 2)
-    print CFinder(A, 2)
-    print copra(A, 2)
-    print bigclam_orig(A, 2)
-
+    print(walktrap(A, 2))
+    print(CFinder(A, 2))
+    print(copra(A, 2))
+    print(bigclam_orig(A, 2))
     #F = np.array([[0, 0, 0, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0]]).T
     #print MeanConductance(GetComms(F, A), A)
     #print NMI3(GetComms(F, A), A, {0: [4, 1, 2, 3], 1: [7, 4, 5, 6]})

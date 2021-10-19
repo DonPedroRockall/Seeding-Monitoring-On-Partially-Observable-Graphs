@@ -1,35 +1,66 @@
 import copy
+import csv
+import os
 import random
 import sys
+from fractions import Fraction
+from timeit import default_timer as timer
 
 import networkx
 import numpy
-
-from fractions import Fraction
 from networkx.algorithms import approximation
-from scipy.optimize import minimize
+
+# from Monitoring.SourceIdentification.Camerini import Camerini
+# from Monitoring.SourceIdentification.imeterOpt import IMeterSort
+# from Monitoring.SourceIdentification.independent_cascade_opt import independent_cascade, get_infected_subgraphs
 
 
-def PlaceMonitors():
-    # TODO: Implement this. Automatically calls "identify sources" and "monitor placement"
-    pass
-
-
-
-
-def MonitorPlacement(graph: networkx.DiGraph, sources: list, targets: list, k):
+# def PlaceMonitors(graph, k, steps):
+    # # n_jobs = 30
+    # # processes = 16
+    # #
+    # intervals = [100, 250, 500, 650, 1000, 1200, 1500, 1700, 2100, 2700]
+    # # queue = Manager().Queue()
+    # #
+    # # for i in range(n_jobs):
+    # #     queue.put(i)
+    # #
+    # # for k in range(2, 5):
+    # #     for interval in range(0, len(intervals), 2):
+    # #         pool = Pool(processes)
+    # #         pool.map(run, [(steps, graph, k, queue, intervals[interval:interval + 2]) for i in range(n_jobs)])
+    #
+    # sources = list()
+    #
+    # for k in range(2, 5):
+    #     for interval in range(0, len(intervals), 2):
+    #         sources = process(steps, graph, k, intervals[interval:interval + 2], file_version=False)
+def MonitorPlacement(graph: networkx.DiGraph, sources: list, targets: list, budget: int):
     """
     Given sources S and targets T to protect, calculates where to place
     :param graph:       Input Graph
     :param sources:     List of graph nodes that are considered Source of misinformation
     :param targets:     List of graph nodes that have to be protected by the spread of misinformation
-    :param k:           Upper limit of the number of monitors to place
+    :param budget:      Upper limit of the number of monitors to place
     :return:            A list containing the nodes where the monitors should be placed
     """
-    contr_graph = SourceContraction(graph, sources, targets)
-    weighted_contr_graph, contr_source, contr_target = WeightConversion(contr_graph)
-    (L, R) = UnbalancedCut(weighted_contr_graph, contr_source, contr_target, k)
-    C = BipartiteGraphFromCut(L, R)
+    contr_graph, contr_source, contr_target = SourceContraction(graph, sources, targets)
+    weighted_contr_graph = WeightConversion(contr_graph)
+
+    # Get the maximum weight among all edges
+    max_weight = -1
+    for u, v, data in weighted_contr_graph.edges(data=True):
+        if data["weight"] > max_weight:
+            max_weight = data["weight"]
+
+    (L, R, alpha) = UnbalancedCut(weighted_contr_graph, contr_source, contr_target, budget, alpha_start=0, alpha_end=max_weight, alpha_step=max_weight / 100)
+    C = BipartiteGraphFromCut(contr_graph, L, R)
+    # Remove source and target from the bipartite graph
+    # TODO: Check if this reasoning is correct
+    if C.has_node(contr_source):
+        C.remove_node(contr_source)
+    if C.has_node(contr_target):
+        C.remove_node(contr_target)
     M = networkx.algorithms.approximation.min_weighted_vertex_cover(C)
     return M
 
@@ -56,7 +87,6 @@ def UnbalancedCut(graph: networkx.DiGraph, source, target, k, alpha_start=0, alp
     return None
 
 
-
 def GetAlphaMinCut(graph: networkx.DiGraph, source, target, alpha):
     """
     Performs a min-cut on a graph "alpha_graph", obtained from graph and adding an edge of capacity alpha from each node
@@ -70,6 +100,7 @@ def GetAlphaMinCut(graph: networkx.DiGraph, source, target, alpha):
     alpha_graph = copy.copy(graph)
     for node in alpha_graph.nodes():
         if node is target or node is source:
+            print(node is target, node is source)
             continue
         alpha_graph.add_edge(node, target, weight=alpha)
 

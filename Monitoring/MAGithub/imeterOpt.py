@@ -49,7 +49,7 @@ def iMeter(infected_subgraph, suspects):
 				stop_prob = 1
 				for neighboor in neighboors:
 					stop_prob *= (1 - infected_subgraph[neighboor][hits[u_node][1] if
-					hits[u_node][1] is not None else u_node]['act_prob'])
+					hits[u_node][1] is not None else u_node]['weight'])
 				# yes, it does
 				if random.random() <= stop_prob:
 					active_reverse_flows.remove(u_node)
@@ -66,7 +66,7 @@ def iMeter(infected_subgraph, suspects):
 				else:
 					# order neighboors by high prob to active the current node where the reverse flow is started from u_node
 					neighboors = [(neighboor, infected_subgraph[neighboor][hits[u_node][1] if
-					hits[u_node][1] is not None else u_node]['act_prob']) for neighboor in neighboors]
+					hits[u_node][1] is not None else u_node]['weight']) for neighboor in neighboors]
 					neighboors = sorted(neighboors, key=lambda x: x[1], reverse=True)
 					founded_neighboor = False
 					while not founded_neighboor:

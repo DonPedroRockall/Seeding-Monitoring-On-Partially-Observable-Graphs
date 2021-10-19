@@ -1,6 +1,6 @@
 import networkx as nx
 import pickle
-from Queue import PriorityQueue
+from Utilities.PQueue import PriorityQueue
 import copy
 import random
 import string
@@ -10,14 +10,11 @@ import sys
 class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
     """
     MultiDiGraph which assigns unique keys to every edge.
-
     Adds a dictionary edge_index which maps edge keys to (u, v, data) tuples.
-
     This is not a complete implementation. For Edmonds algorithm, we only use
     add_node and add_edge, so that is all that is implemented here. During
     additions, any specified keys are ignored---this means that you also
     cannot update edge attributes through add_node and add_edge.
-
     """
 
     def __init__(self, data=None, **attr):
@@ -46,7 +43,6 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
     def add_edge(self, u, v, key, attr_dict=None, **attr):
         """
         Key is now required.
-
         """
         if key in self.edge_index:
             uu, vv, _ = self.edge_index[key]
@@ -82,7 +78,7 @@ def random_string(L=15, seed=None):
 
 class Camerini():
 
-    def __init__(self, graph, Y=nx.DiGraph(), Z=nx.DiGraph(), attr='weight'):
+    def __init__(self, graph, Y=nx.DiGraph(), Z=nx.DiGraph(), attr='act_prob'):
         self.original_graph = graph
         self.attr = attr
         self._init(Y=Y, Z=Z)
@@ -109,14 +105,20 @@ class Camerini():
         # print ('Graph',graph.edges())
         for u, v, key, data in graph.in_edges([node], data=True, keys=True):
             # print ('edge',u,v,data)
-            if max_weight <= data[self.attr]:
-                max_weight = data[self.attr]
-                e = (u, v, key, data)
+            # print("camerini.py @ 108", data)
+            if "act_prob" in data:
+                if max_weight <= data[self.attr]:
+                    max_weight = data[self.attr]
+                    e = (u, v, key, data)
+            else:
+                if max_weight <= data["attr_dict"]["weight"]:
+                    max_weight = data["attr_dict"]["weight"]
+                    e = (u, v, key, data)
         return e
 
     def collapse_cycle(self, graph, cycle, B, new_node):
         for node in cycle:
-            for u, v, key, data in graph.out_edges([node], data=True, keys=True):
+            for u, v, key, data in list(graph.out_edges([node], data=True, keys=True)):
 
                 graph.remove_edge_with_key(key)
 
@@ -124,14 +126,33 @@ class Camerini():
                     dd = data.copy()
                     graph.add_edge(new_node, v, key, **dd)
 
-            for u, v, key, data in graph.in_edges([node], data=True, keys=True):
+            for u, v, key, data in list(graph.in_edges([node], data=True, keys=True)):
                 if u in cycle:
                     # it will be delete later
                     continue
                 graph.remove_edge_with_key(key)
                 dd = data.copy()
                 dd_eh = list(B.in_edges([node], data=True))[0][2]
-                dd[self.attr] = dd[self.attr] - dd_eh[self.attr]
+                # print("camerini.py @ 136", dd, dd_eh)
+                first = None
+                second = None
+
+                if self.attr in dd:
+                    first = dd[self.attr]
+                elif "weight" in dd:
+                    first = dd["weight"]
+                else:
+                    first = dd["attr_dict"]["weight"]
+
+                if self.attr in dd_eh:
+                    second = dd_eh[self.attr]
+                elif "weight" in dd_eh:
+                    second = dd_eh["weight"]
+                else:
+                    second = dd_eh["attr_dict"]["weight"]
+
+                # dd[self.attr] = dd[self.attr] - dd_eh[self.attr]
+                dd[self.attr] = first - second
                 graph.add_edge(u, new_node, key, **dd)
 
         for node in cycle:
@@ -148,7 +169,17 @@ class Camerini():
                 supernodes.remove(v)
             return exposed_nodes, order, M, supernodes, B, None
         b_u, b_v, b_key, b_data = b
-        data = {self.attr: b_data[self.attr], 'origin': b_data['origin']}
+        # try:
+        #     data = {self.attr: b_data[self.attr], 'origin': b_data['origin']}
+        # except:
+        #     print("camerini.py @ 156", b_data)
+        #     data = {self.attr: b_data[self.attr], 'origin': b_data['origin']}
+
+        # print("camerini.py @ 158", b_data)
+        if self.attr in b_data:
+            data = {self.attr: b_data[self.attr], 'origin': b_data['origin']}
+        else:
+            data = {"weight": b_data["attr_dict"]["weight"], 'origin': b_data['origin']}
         B.add_edge(b_u, b_v, **data)
         return exposed_nodes, order, M, supernodes, B, b
 
@@ -162,8 +193,8 @@ class Camerini():
                 C[str(node)] = str(u)
             M, B = self.collapse_cycle(M, cycles[0], B, u)
             for node in B.nodes():
-                if not B.in_edges([node]):
-                    if not B.out_edges([node]):
+                if B.in_edges([node]) == []:
+                    if B.out_edges([node]) == []:
                         B.remove_node(node)
                     if node != root and node not in exposed_nodes:
                         exposed_nodes.append(node)
@@ -173,7 +204,18 @@ class Camerini():
     def best(self, root):
         M = self.graph
         for u, v, key, data in M.edges(data=True, keys=True):
-            data['origin'] = (u, v, key, {self.attr: data[self.attr]})
+            # try:
+            #     data['origin'] = (u, v, key, {self.attr: data[self.attr]})
+            # except:
+            #     print("camerini.py @ 175", data, self.attr)
+            #     data['origin'] = (u, v, key, {self.attr: data[self.attr]})
+            if self.attr in data:
+                data["origin"] = (u, v, key, {self.attr: data[self.attr]})
+            elif "weight" in data:
+                data["origin"] = (u, v, key, {self.attr: data[self.attr]})
+            else:
+                data["origin"] = (u, v, key, {self.attr: data["attr_dict"]["weight"]})
+                # data["origin"] = (u, v, key, {self.attr: data[self.attr] if self.attr in data else data["weight"]})
         n = 0
         B = nx.DiGraph()
         # C contains for every node its parent node, so it will be easy to find the path in the collapsing phase
@@ -339,7 +381,7 @@ class Camerini():
         return solutions
 
     def add_dummy_edges(self, root, w):
-        for node in self.graph.nodes():
+        for node in list(self.graph.nodes()):
             while True:
                 key = self.template + '_' + str(node)
                 if key not in self.graph.edge_index:
@@ -360,7 +402,14 @@ class Camerini():
     def get_graph_score(self, graph):
         score = 0
         for u, v, data in graph.edges(data=True):
-            score += data[self.attr]
+            try:
+                if self.attr in data:
+                    score += data[self.attr]
+                else:
+                    score += data["weight"]
+            except:
+                print(data)
+                score += data[self.attr]
         return score
 
     def find_roots(self, branching):

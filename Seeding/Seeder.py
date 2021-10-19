@@ -36,7 +36,7 @@ def BudgetedInfluenceMaximization(Graph: networkx.Graph, cost_function, B):
     """
 
     S1 = BasicGreedy(Graph, B)  # TODO: check if B has to be sent as parameter to BasicGreedy
-    for u in Graph.nodes():
+
 
 
 def SocialInfluenceFunction():

@@ -1,7 +1,7 @@
 import networkx as nx
 import random
-pathname = 'graphs/soc-Epinions1.txt'
-out_pathname = 'graphs/epinions.txt'
+pathname = '../../Datasets/soc-Epinions1.txt'
+out_pathname = '../../Datasets/epinions.txt'
 
 def readDirectGraph(pathname):
   infile = open(pathname,'r')
@@ -28,7 +28,7 @@ for node in graph.nodes():
 for node in graph.nodes():
     for neigh in graph.successors(node):
         prob = random.uniform( max( (quality[neigh] - (1-quality[node])), 0) , min( (quality[neigh] + (1-quality[node]) ), 1) )
-        graph[node][neigh]['act_prob'] = prob
+        graph[node][neigh]['weight'] = prob
         out_file.write(node+'\t'+neigh+'\t'+str(prob)+'\n')
 out_file.close()
 

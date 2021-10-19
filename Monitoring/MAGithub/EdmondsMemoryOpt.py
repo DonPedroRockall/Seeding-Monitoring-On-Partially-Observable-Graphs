@@ -10,7 +10,7 @@ This implementation is based on:
 """
 # TODO: Implement method from Gabow, Galil, Spence and Tarjan:
 #
-#@article{
+# @article{
 #    year={1986},
 #    issn={0209-9683},
 #    journal={Combinatorica},
@@ -26,14 +26,15 @@ This implementation is based on:
 #        Robert E.},
 #    pages={109-122},
 #    language={English}
-#}
+# }
 
 from __future__ import division
 from __future__ import print_function
 
+import copy
+
 "Debug mode on/off"
 # from pudb import set_trace; set_trace()
-
 
 
 # from independent_cascade_opt import independent_cascade, getInfectedSubgraph, get_infected_subgraphs
@@ -46,7 +47,6 @@ import pickle
 
 from random import choice
 
-
 from operator import itemgetter
 
 import networkx as nx
@@ -54,7 +54,7 @@ import networkx as nx
 __all__ = [
     'branching_weight', 'greedy_branching',
     'maximum_branching', 'minimum_branching',
-    'maximum_spanning_arborescence', 'minimum_spanning_arborescence',
+    'maximum_spanning_arborescence_manual', 'minimum_spanning_arborescence',
     'Edmonds'
 ]
 
@@ -73,11 +73,14 @@ def random_string(L=15, seed=None):
     random.seed(seed)
     return ''.join([random.choice(string.ascii_letters) for n in range(L)])
 
+
 def _min_weight(weight):
     return -weight
 
+
 def _max_weight(weight):
     return weight
+
 
 def branching_weight(G, attr='weight', default=1):
     """
@@ -85,6 +88,7 @@ def branching_weight(G, attr='weight', default=1):
 
     """
     return sum(edge[2].get(attr, default) for edge in G.edges(data=True))
+
 
 class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
     """
@@ -102,6 +106,7 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
     of edges. We must reliably track edges across graph mutations.
 
     """
+
     def __init__(self, data=None, **attr):
         cls = super(MultiDiGraph_EdgeKey, self)
         cls.__init__(data=data, **attr)
@@ -143,7 +148,7 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
 
     def remove_edge_with_key(self, key):
         try:
-            u, v, _  = self.edge_index[key]
+            u, v, _ = self.edge_index[key]
         except KeyError:
             raise KeyError('Invalid edge key {0!r}'.format(key))
         else:
@@ -152,6 +157,7 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
 
     def remove_edges_from(self, ebunch):
         raise NotImplementedError
+
 
 def get_path(G, u, v):
     """
@@ -162,6 +168,7 @@ def get_path(G, u, v):
 
     """
     nodes = nx.shortest_path(G, u, v)
+
     # We are guaranteed that there is only one edge connected every node
     # in the shortest path.
 
@@ -175,11 +182,13 @@ def get_path(G, u, v):
     edges = [first_key(i, vv) for i, vv in enumerate(nodes[1:])]
     return nodes, edges
 
+
 class Edmonds(object):
     """
     Edmonds algorithm for finding optimal branchings and spanning arborescences.
 
     """
+
     def __init__(self, G, seed=None):
         self.G_original = G
 
@@ -192,6 +201,7 @@ class Edmonds(object):
         # Since we will be creating graphs with new nodes, we need to make
         # sure that our node names do not conflict with the real node names.
         self.template = random_string(seed=seed) + '_{0}'
+
     def _init(self, attr, default, kind, style):
         if kind not in KINDS:
             raise nx.NetworkXException("Unknown value for `kind`.")
@@ -245,6 +255,7 @@ class Edmonds(object):
         # that the minimum edge of the circuit in G^i is still the minimum edge
         # in circuit G^0 (depsite their weights being different).
         self.minedge_circuit = []
+
     def find_optimum(self, attr='weight', default=1, kind='max', style='branching'):
         """
         Returns a branching from G.
@@ -308,11 +319,11 @@ class Edmonds(object):
                 raise nx.exception.NetworkXPointlessConcept('G has no nodes.')
 
             if G.is_directed():
-                components = nx.weakly_connected_component_subgraphs
+                components = [copy.copy(G.subgraph(c)) for c in nx.algorithms.components.weakly_connected_components(G)]
             else:
-                components = nx.connected_component_subgraphs
+                components = [copy.copy(G.subgraph(c)) for c in nx.algorithms.components.connected_components(G)]
 
-            for component in components(G):
+            for component in components:
                 # Make sure the component is a tree.
                 if component.number_of_edges() != component.number_of_nodes() - 1:
                     return False
@@ -323,8 +334,10 @@ class Edmonds(object):
             if not is_forest(G):
                 return False
 
-            if max(G.in_degree().values()) > 1:
-                return False
+            # Check if maximum in-degree is greater than one
+            for node in G.nodes():
+                if G.in_degree(node) > 1:
+                    return False
 
             return True
 
@@ -333,7 +346,7 @@ class Edmonds(object):
             while True:
                 # (I1): Choose a node v in G^i not in D^i.
                 try:
-                   v = next(nodes)
+                    v = next(nodes)
                 except StopIteration:
                     # If there are no more new nodes to consider, then we *should*
                     # meet the break condition (b) from the paper:
@@ -342,7 +355,7 @@ class Edmonds(object):
                     if len(G) != len(B):
                         raise Exception('Graph and branching must have the same number of nodes.')
                     if len(B):
-                        if not(is_branching(B)):
+                        if not (is_branching(B)):
                             raise Exception('The branching must be a branching by definition.')
 
                     # Add these to keep the lengths equal. Element i is the
@@ -354,16 +367,16 @@ class Edmonds(object):
                     return G, B, max_mem_usage
                 else:
                     if v in D:
-                        #print("v in D", v)
+                        # print("v in D", v)
                         continue
 
                 # Put v into bucket D^i.
-                #print("Adding node {0}".format(v))
+                # print("Adding node {0}".format(v))
                 D.add(v)
                 B.add_node(v)
 
                 edge, weight = desired_edge(v)
-                #print("Max edge is {0!r}".format(edge))
+                # print("Max edge is {0!r}".format(edge))
                 if edge is None:
                     # If there is no edge, continue with a new node at (I1).
                     continue
@@ -386,14 +399,14 @@ class Edmonds(object):
 
                     # Conditions for adding the edge.
                     # If weight < 0, then it cannot help in finding a maximum branching.
-                    if not(self.style == 'branching' and weight <= 0):
+                    if not (self.style == 'branching' and weight <= 0):
                         dd = {attr: weight}
                         B.add_edge(u, v, key=edge[2], **dd)
                         G[u][v][edge[2]]['candidate'] = True
                         uf.union(u, v)
                         if Q_edges is not None:
-                            #print("Edge introduced a simple cycle:")
-                            #print(Q_nodes, Q_edges)
+                            # print("Edge introduced a simple cycle:")
+                            # print(Q_nodes, Q_edges)
 
                             # Move to method
                             # Previous meaning of u and v is no longer important.
@@ -408,7 +421,7 @@ class Edmonds(object):
                                 u, v, data = B.edge_index[edge_key]
                                 w = data[attr]
                                 Q_incoming_weight[v] = w
-                                if  w < minweight:
+                                if w < minweight:
                                     minweight = w
                                     minedge = edge_key
 
@@ -418,11 +431,10 @@ class Edmonds(object):
                             # Now we mutate it.
                             new_node = self.template.format(self.level)
 
-                            #print(minweight, minedge, Q_incoming_weight)
+                            # print(minweight, minedge, Q_incoming_weight)
 
                             G.add_node(new_node)
                             new_edges = []
-
 
                             if self.level not in self.unroll:
                                 self.unroll[self.level] = []
@@ -434,7 +446,7 @@ class Edmonds(object):
                                         dd = data.copy()
                                         if 'candidate' in dd:
                                             del dd['candidate']
-                                        self.unroll[self.level].append((u, v, key, dd))                                       
+                                        self.unroll[self.level].append((u, v, key, dd))
                                     else:
                                         # Outgoing edge. Make it from new node
                                         new_edges.append((new_node, v, key, data.copy()))
@@ -462,13 +474,12 @@ class Edmonds(object):
                                         # Outside edge. No modification necessary.
                                         continue
 
-                            current_mem_usage = psutil.virtual_memory().percent 
+                            current_mem_usage = psutil.virtual_memory().percent
                             if max_mem_usage < current_mem_usage:
                                 max_mem_usage = current_mem_usage
-                            
-                            if current_mem_usage > 89:
-                                exit('Too much ram usage: '+str(current_mem_usage))
 
+                            if current_mem_usage > 89:
+                                exit('Too much ram usage: ' + str(current_mem_usage))
 
                             G.remove_nodes_from(Q_nodes)
                             B.remove_nodes_from(Q_nodes)
@@ -484,15 +495,14 @@ class Edmonds(object):
                             nodes = iter(list(G.nodes()))
                             self.level += 1
 
-                            current_mem_usage = psutil.virtual_memory().percent 
+                            current_mem_usage = psutil.virtual_memory().percent
                             if max_mem_usage < current_mem_usage:
                                 max_mem_usage = current_mem_usage
-                            
+
                             if current_mem_usage > 89:
-                                exit('Too much ram usage: '+str(current_mem_usage))
+                                exit('Too much ram usage: ' + str(current_mem_usage))
 
             return None, None, max_mem_usage
-
 
         def is_root(G, u, edgekeys):
             """
@@ -503,7 +513,7 @@ class Edmonds(object):
 
             """
             if u not in G:
-                #print(G.nodes(), u)
+                # print(G.nodes(), u)
                 raise Exception('{0!r} not in G'.format(u))
             for v in G.pred[u]:
                 for edgekey in G.pred[u][v]:
@@ -531,29 +541,29 @@ class Edmonds(object):
                 # The circuit at level i that was merged as a node the graph
                 # at level i+1.
                 circuit = self.circuits[self.level]
-                #print
-                #print(merged_node, self.level, circuit)
-                #print("before", edges)
+                # print
+                # print(merged_node, self.level, circuit)
+                # print("before", edges)
                 # Note, we ask if it is a root in the full graph, not the branching.
                 # The branching alone doesn't have all the edges.
                 isroot, edgekey = is_root(graph, merged_node, edges)
-                
+
                 # Rebuilding the graph of the level i
                 graph.remove_node(merged_node)
 
-                for u,v,key,data in self.unroll[self.level]:
-                        graph.add_edge(u,v,key,**data)
+                for u, v, key, data in self.unroll[self.level]:
+                    graph.add_edge(u, v, key, **data)
 
                 # self.unroll[self.level] = []
-                
+
                 edges.update(circuit)
 
-                current_mem_usage = psutil.virtual_memory().percent 
+                current_mem_usage = psutil.virtual_memory().percent
                 if max_mem_usage < current_mem_usage:
                     max_mem_usage = current_mem_usage
-                
+
                 if current_mem_usage > 89:
-                    exit('Too much ram usage: '+str(current_mem_usage))
+                    exit('Too much ram usage: ' + str(current_mem_usage))
 
                 if isroot:
                     minedge = self.minedge_circuit[self.level]
@@ -568,11 +578,11 @@ class Edmonds(object):
                     # transitions to some corresponding node at the current level.
                     # We want to remove an edge from the cycle that transitions
                     # into the corresponding node.
-                    #print("edgekey is: ", edgekey)
-                    #print("circuit is: ", circuit)
+                    # print("edgekey is: ", edgekey)
+                    # print("circuit is: ", circuit)
                     # The branching at level i
-                    
-                    #print(G.edge_index)
+
+                    # print(G.edge_index)
                     target = graph.edge_index[edgekey][1]
                     for edgekey in circuit:
                         u, v, data = graph.edge_index[edgekey]
@@ -580,14 +590,14 @@ class Edmonds(object):
                             break
                     else:
                         raise Exception("Couldn't find edge incoming to merged node.")
-                    #print("not a root. removing {0}".format(edgekey))
+                    # print("not a root. removing {0}".format(edgekey))
 
                     edges.remove(edgekey)
 
             self.edges = edges
 
             H.add_nodes_from(self.G_original)
-            for edgekey in edges: 
+            for edgekey in edges:
                 u, v, d = graph.edge_index[edgekey]
                 dd = {self.attr: self.trans(d[self.attr])}
                 # TODO: make this preserve the key. In fact, make this use the
@@ -599,6 +609,7 @@ class Edmonds(object):
         max_mem_usage = 0
         G, B, max_mem_usage = get_final_graph_and_branch(nodes, max_mem_usage)
         return branch_construction(G, B, max_mem_usage)
+
 
 def is_tree(G):
     """
@@ -618,11 +629,9 @@ def is_tree(G):
         return False
 
     if G.is_directed():
-        is_connected = nx.is_weakly_connected
+        return nx.is_weakly_connected(G)
     else:
-        is_connected = nx.is_connected
-
-    return is_connected(G)
+        return nx.is_connected(G)
 
 
 def is_arborescence(G):
@@ -634,28 +643,33 @@ def is_arborescence(G):
     if not is_tree(G):
         return False
 
-    if max(G.in_degree().values()) > 1:
-        return False
+    # Check if maximum in-degree is greater than 1
+    for node in G.nodes():
+        if G.in_degree(node) > 1:
+            return False
 
     return True
+
 
 def maximum_branching(G, attr='weight', default=1):
     ed = Edmonds(G)
     B = ed.find_optimum(attr, default, kind='max', style='branching')
     return B
 
+
 def minimum_branching(G, attr='weight', default=1):
     ed = Edmonds(G)
     B = ed.find_optimum(attr, default, kind='min', style='branching')
     return B
 
-def maximum_spanning_arborescence(G, attr='weight', default=1):
+
+def maximum_spanning_arborescence_manual(G, attr='weight', default=1):
     ed = Edmonds(G)
     B, max_mem_usage = ed.find_optimum(attr, default, kind='max', style='arborescence')
     if not is_arborescence(B):
-        msg = 'No maximum spanning arborescence in G.'
-        raise nx.exception.NetworkXException(msg)
+        raise nx.exception.NetworkXException('No maximum spanning arborescence in G.')
     return B, max_mem_usage
+
 
 def minimum_spanning_arborescence(G, attr='weight', default=1):
     ed = Edmonds(G)
@@ -664,6 +678,7 @@ def minimum_spanning_arborescence(G, attr='weight', default=1):
         msg = 'No maximum spanning arborescence in G.'
         raise nx.exception.NetworkXException(msg)
     return B
+
 
 docstring_branching = """
 Returns a {kind} {style} from G.
@@ -698,7 +713,7 @@ maximum_branching.__doc__ = \
 minimum_branching.__doc__ = \
     docstring_branching.format(kind='minimum', style='branching')
 
-maximum_spanning_arborescence.__doc__ = \
+maximum_spanning_arborescence_manual.__doc__ = \
     docstring_arborescence.format(kind='maximum', style='spanning arborescence')
 
 minimum_spanning_arborescence.__doc__ = \
