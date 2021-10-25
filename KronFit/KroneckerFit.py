@@ -3,6 +3,7 @@ import numpy
 import os
 import networkx as nx
 from networkx import Graph
+from definitions import SNAP_EXE_PATH
 
 
 def KronFit(graph: Graph, n0, theta: numpy.array = None, gd_iterations=None, lr=None, min_gd_step=None,
@@ -24,11 +25,13 @@ def KronFit(graph: Graph, n0, theta: numpy.array = None, gd_iterations=None, lr=
     # Relabel nodes
     graph = nx.relabel.convert_node_labels_to_integers(graph)
 
-    # Write edge list to file
-    nx.write_edgelist(graph, "../SnapExecutables/graph.txt", data=False)
-
     # Change dir
-    os.chdir("../SnapExecutables")
+    os.chdir(SNAP_EXE_PATH)
+
+    # Write edge list to file
+    nx.write_edgelist(graph, "graph.txt", data=False)
+
+
 
     # Issue cmd command
     os.system("cmd /c kronfit.exe -i:graph.txt -n0:{0} -m:{1} {2} {3} {4} {5} {6} {7} {8}"
@@ -45,7 +48,7 @@ def KronFit(graph: Graph, n0, theta: numpy.array = None, gd_iterations=None, lr=
     theta_final = numpy.zeros(shape=(n0, n0))
 
     # Open the file that contains the Theta and read it
-    with open('graph-fit'+str(n0)) as f:
+    with open('graph-fit' + str(n0)) as f:
         last_line = f.readlines()[-1]
     result = (last_line.split("[")[-1])[:-2]
     params = result.split("; ")

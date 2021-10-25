@@ -3,7 +3,7 @@ import networkx
 from KronFit.KroneckerFit import *
 
 
-def InfluentialNodeRecovery(graph: networkx.Graph, M, N0, alpha, beta, epsilon, centrality="deg"):
+def InfluentialNodeRecovery(graph: networkx.Graph, M, N0, alpha=None, beta=None, epsilon=0, centrality="deg"):
     """
     Estimates and recovers a number of influential nodes from a partially observable graph
     :param graph:           The original observable graph
@@ -87,7 +87,7 @@ def GraphRecv(A, N0, M):
     return P
 
 
-def NodeSelect(Ar: numpy.ndarray, N, M, alpha, beta, epsilon, centrality="deg"):
+def NodeSelect(Ar: numpy.ndarray, N, M, alpha=None, beta=None, epsilon=0, centrality="deg"):
     """
     Selects the nodes of the recovered adjacency matrix, since not all of them will be influential
 

@@ -16,7 +16,4 @@ def RandomConnectedDirectedGraph(num_nodes, min_num_edges):
         if not graph.has_edge(u, v):
             graph.add_edge(u, v)
 
-    for node in graph.nodes():
-        print(node)
-
     return graph
