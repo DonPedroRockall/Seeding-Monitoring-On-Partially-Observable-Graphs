@@ -1,8 +1,14 @@
 import networkx as nx
-import pylab
+import pyvis.options
+from pyvis.network import Network
 
 
-def DrawGraph(graph):
-    nx.draw(graph, with_labels=True)
-    nx.spring_layout(graph)
-    pylab.show()
+def DrawGraph(graph, color_dict=None, graph_name="graph"):
+
+    if color_dict is not None:
+        for node in color_dict:
+            graph.nodes[node]["color"] = color_dict[node]
+
+    nt = Network("1080px", "1920px")
+    nt.from_nx(graph)
+    nt.show(graph_name + ".html")
