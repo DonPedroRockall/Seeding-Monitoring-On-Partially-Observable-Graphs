@@ -1,15 +1,21 @@
+import networkx as nx
+
 from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
 from Utilities.DrawGraph import DrawGraph
 
 
-full, part, recv = GenerateRandomGraphTriple(10, 25, 3, UniformDistribution, TotalNodeClosure)
+if __name__ == "__main__":
+    full, part, recv = GenerateRandomGraphTriple(10, 25, 3, UniformDistribution, TotalNodeClosure)
 
-print(list(full.edges()))
-print(list(part.edges()))
-print(list(recv.edges()))
+    print(list(full.edges()))
+    print(list(part.edges()))
+    print(list(recv.edges()))
 
-DrawGraph(full)
-DrawGraph(part)
-DrawGraph(recv)
+    nx.draw_random(full)
+    nx.draw_random(part)
+
+    DrawGraph(full, physics=False, directed=True)
+    DrawGraph(part, physics=False, directed=True)
+    DrawGraph(recv, physics=False, directed=True)
