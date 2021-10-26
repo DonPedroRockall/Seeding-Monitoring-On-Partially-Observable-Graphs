@@ -3,10 +3,13 @@ from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
 from Utilities.DrawGraph import DrawGraph
 
-import scipy
 
-full, part, rec = GenerateRandomGraphTriple(10, 25, 3, TotalNodeClosure, UniformDistribution)
+full, part, recv = GenerateRandomGraphTriple(10, 25, 3, UniformDistribution, TotalNodeClosure)
+
+print(list(full.edges()))
+print(list(part.edges()))
+print(list(recv.edges()))
 
 DrawGraph(full)
 DrawGraph(part)
-DrawGraph(rec)
+DrawGraph(recv)
