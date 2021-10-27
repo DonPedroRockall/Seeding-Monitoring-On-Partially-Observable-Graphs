@@ -3,7 +3,7 @@ import pyvis.options
 from pyvis.network import Network
 
 
-def DrawGraph(graph, color_dict=None, graph_name="graph", physics=True, directed=True):
+def DrawGraph(graph, color_dict=None, graph_name="graph", physics=False, directed=True):
 
     # Set color attributes
     if color_dict is not None:

@@ -3,7 +3,7 @@ import math
 import networkx as nx
 import numpy
 import random
-from utility import ShowGraph, FixEdgeProb
+from Utilities.DrawGraph import DrawGraph
 
 # for the IC model, we only need the edge weights (assigned randomly in the range [0, 1]);
 # in the following, the adjectives 'influenced' and 'activated' are used interchangeably
@@ -101,7 +101,7 @@ def SIMVoterank(G: nx.DiGraph, k):
 if __name__ == "__main__":
     G = nx.fast_gnp_random_graph(500, 0.005, directed=True)  # standard: n=1000, p=0.0014
 
-    ShowGraph(G)
+    DrawGraph(G, physics=False)
     InitGraphParametersIC(G)
 
     SIMVoterank(G, 3)
