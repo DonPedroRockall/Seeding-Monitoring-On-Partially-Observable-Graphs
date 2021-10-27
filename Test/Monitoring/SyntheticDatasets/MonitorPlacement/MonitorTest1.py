@@ -16,6 +16,6 @@ if __name__ == "__main__":
     nx.draw_random(full)
     nx.draw_random(part)
 
-    DrawGraph(full, physics=False, directed=True)
-    DrawGraph(part, physics=False, directed=True)
-    DrawGraph(recv, physics=False, directed=True)
+    DrawGraph(full, physics=False, directed=True, graph_name="Full")
+    DrawGraph(part, physics=False, directed=True, graph_name="Part")
+    DrawGraph(recv, physics=False, directed=True, graph_name="Recv")

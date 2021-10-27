@@ -40,12 +40,12 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     part_obs_graph = hiding_function(part_obs_graph, nodes_to_hide)
 
     # Reconstruct the graph
-    # reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(
-    #     part_obs_graph.copy(), num_nodes_to_hide, N0=2, alpha=None, beta=None,
-    #     epsilon=influential_threshold, centrality=influential_centrality)
+    reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(
+        part_obs_graph.copy(), num_nodes_to_hide, N0=2, alpha=None, beta=None,
+        epsilon=influential_threshold, centrality=influential_centrality)
 
     # Print out useful information that is not used in the process (nor returned by this function)
-    # print("Number of recovered nodes:", nodes_recovered)
+    print("Number of recovered nodes:", nodes_recovered)
 
     # Return the triple
-    return full_graph, part_obs_graph, full_graph# reconstructed_graph
+    return full_graph, part_obs_graph, reconstructed_graph

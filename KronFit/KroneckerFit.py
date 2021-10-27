@@ -34,6 +34,7 @@ def KronFit(graph: Graph, n0, theta: numpy.array = None, gd_iterations=None, lr=
 
 
     # Issue cmd command
+    os.system("cmd echo off")
     os.system("cmd /c kronfit.exe -i:graph.txt -n0:{0} -m:{1} {2} {3} {4} {5} {6} {7} {8}"
               .format(n0,
                       "R" if theta is None else TransformTheta(theta),
@@ -44,6 +45,7 @@ def KronFit(graph: Graph, n0, theta: numpy.array = None, gd_iterations=None, lr=
                       "" if n_warmup is None else "-w:" + str(n_warmup),
                       "" if n_samples is None else "-s:" + str(n_samples),
                       "" if swap_prob is None else "-nsp:" + str(swap_prob)))
+    os.system("cmd echo on")
 
     theta_final = numpy.zeros(shape=(n0, n0))
 
