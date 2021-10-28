@@ -106,8 +106,9 @@ def chooseMs(cutset, source, target, verbose=False):
 	if len(cut_graph.edges()) != 0:
 		try:
 			R = edmonds_karp(cut_graph, 's', 't')
-		except:
+		except Exception as e:
 			print("EfficientAlgoritm.py @ 110")
+			print(e)
 			print("source:", source)
 			print("target:", target)
 			print(cut_graph.edges(data=True))
