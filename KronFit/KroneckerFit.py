@@ -44,7 +44,6 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
                       "" if n_warmup is None else "-w:" + str(n_warmup),
                       "" if n_samples is None else "-s:" + str(n_samples),
                       "" if swap_prob is None else "-nsp:" + str(swap_prob)))
-
     theta_final = numpy.zeros(shape=(n0, n0))
 
     # Open the file that contains the Theta and read it

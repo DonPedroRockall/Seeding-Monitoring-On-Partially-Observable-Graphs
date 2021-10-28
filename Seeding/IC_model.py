@@ -72,12 +72,15 @@ def SIMBasicGreedy(G: nx.DiGraph, k):
         seed_set.append(max_node)
         active_nodes += max_gain
 
+    return RunIC(G, seed_set)
+
+'''
     print("############### BASIC GREEDY ###############")
     print("Basic Greedy seed set: ", seed_set)
     activated = RunIC(G, seed_set)
     print("Activated nodes: ", activated)
     print("Num. of activated nodes: ", len(activated))
-    print("############################################")
+    print("############################################")'''
 
 
 # [HEURISTIC] computes the best nodes based on vote-rank centrality, with an upper limit given by the value k;
@@ -89,21 +92,12 @@ def SIMVoterank(G: nx.DiGraph, k):
         for i in range(k):
             temp.append(vote_rank[i])
         vote_rank = temp
+    return RunIC(G, vote_rank)
 
+'''
     print("############### VOTERANK ###############")
     print("Vote-rank seed set: ", vote_rank)
     activated = RunIC(G, vote_rank)
     print("Activated nodes: ", activated)
     print("Num. of activated nodes: ", len(activated))
-    print("########################################")
-
-
-if __name__ == "__main__":
-    G = nx.fast_gnp_random_graph(500, 0.005, directed=True)  # standard: n=1000, p=0.0014
-
-    DrawGraph(G, physics=False)
-    InitGraphParametersIC(G)
-
-    SIMVoterank(G, 3)
-    print("\n")
-    SIMBasicGreedy(G, 3)
+    print("########################################")'''
