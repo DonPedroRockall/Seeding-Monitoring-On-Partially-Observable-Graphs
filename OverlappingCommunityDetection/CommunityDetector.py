@@ -15,8 +15,14 @@ def InfluentialNodeRecovery(graph: networkx.Graph, M, N0, alpha=None, beta=None,
     :param centrality:      The Centrality Measure to use. Options: "katz", "deg". Defaults to "deg" (Degree centrality)
     :return:                A Graph with the recovered nodes connected to it and how many nodes have been connected
     """
+    # Transform graph to directed if necessary
+    graph_was_directed = True
+    if not networkx.is_directed(graph):
+        graph = graph.to_directed()
+        graph_was_directed = False
+
     # Remap node labels to be integers
-    observable_graph: Graph = networkx.relabel.convert_node_labels_to_integers(graph)
+    observable_graph: DiGraph = networkx.relabel.convert_node_labels_to_integers(graph)
     # Count the number of observable nodes
     N = observable_graph.number_of_nodes()
     # Transforms the (partially observable) graph into adjacency matrix
@@ -24,17 +30,19 @@ def InfluentialNodeRecovery(graph: networkx.Graph, M, N0, alpha=None, beta=None,
     # Performs Graph recovery to recover the graph
     Ar = GraphRecv(A, N0, M)
 
-    print(Ar)
-
     # Performs node selection to remove non-influential nodes
     H, r = NodeSelect(Ar, N, M, alpha, beta, epsilon, centrality=centrality)
     # Estimates the new graph by connecting the nodes
     estimated_graph = ConnectNodes(graph, Ar, r)
 
+    # If necessary, transform back the graph to undirected
+    if graph_was_directed:
+        estimated_graph = networkx.to_undirected(estimated_graph)
+
     return estimated_graph, H
 
 
-def ConnectNodes(graph: networkx.Graph, Ar: numpy.ndarray, r):
+def ConnectNodes(graph: networkx.DiGraph, Ar: numpy.ndarray, r):
     """
     Connects Recovered nodes to the Original observable graph by using the recovered adjacency matrix Ar
     :param graph:   The original observable graph
@@ -47,7 +55,7 @@ def ConnectNodes(graph: networkx.Graph, Ar: numpy.ndarray, r):
         if column not in r.keys():
             Ar = numpy.delete(Ar, column, axis=1)
             Ar = numpy.delete(Ar, column, axis=0)
-    recovered_graph = networkx.convert_matrix.from_numpy_matrix(Ar)
+    recovered_graph = networkx.convert_matrix.from_numpy_matrix(Ar, create_using=networkx.DiGraph)
     return recovered_graph
 
 
@@ -63,7 +71,7 @@ def GraphRecv(A, N0, M):
     """
 
     # Get the graph and the number of nodes from the adjacency matrix
-    graph: networkx.Graph = networkx.from_numpy_matrix(A, create_using=networkx.Graph)
+    graph: networkx.DiGraph = networkx.from_numpy_matrix(A, create_using=networkx.DiGraph)
     N = graph.number_of_nodes()
 
     # Compute the necessary power of the kronecker product K
@@ -97,12 +105,13 @@ def NodeSelect(Ar: numpy.ndarray, N, M, alpha=None, beta=None, epsilon=0, centra
     :param alpha:       Parameter used for Katz centrality, set as None for default
     :param beta:        Parameter used for Katz centrality, set as None for default
     :param epsilon:     Minimum value of Katz centrality that a node has to have to be considered influential
+    :param centrality:  The centrality measure to use. Valid values: "deg" and "katz"
     :return H:          Maximum number of influential nodes to be selected
     :return r:          Ranking vector node -> centrality (ordered on keys)
     """
 
     # Graph now contains the full recovered graph
-    graph: Graph = networkx.from_numpy_matrix(Ar, create_using=networkx.Graph)
+    graph: DiGraph = networkx.from_numpy_matrix(Ar, create_using=networkx.DiGraph)
 
     # Default parameter configuration
     if alpha is None:
@@ -153,125 +162,6 @@ def NodeSelect(Ar: numpy.ndarray, N, M, alpha=None, beta=None, epsilon=0, centra
 def Bernoulli(float_value):
     return 1 if random.random() < float_value else 0
 
-
-# def CommunDet(Ar, C, Ni_detect):
-#     """
-#     :param Ar:
-#     :param C:
-#     :param Ni_detect:
-#     :return:
-#     """
-#
-#     # Initialization step
-#     F = 0  # TODO: randomly initialize
-#     D_prev = math.inf
-#     D = 0  # TODO: check how to initialize properly
-#
-#     # Iteration step
-#     while abs(D - D_prev) >= Ni_detect:
-#         for u in range(1, N + i):
-
-
-# def OLDKroMFac(Graph: networkx.Graph, M, C, N0, Phi_init, epsilon, delta, Ni_detect, Lambda):
-#     """
-#     Performs Overlapping Community Detection on Partially Observable Graphs.
-#     Based on the following paper:
-#     Tran, C., Shin, W., Spitz, A., "Community detection in Partially Observable Social Networks"
-#
-#     :param Graph:       Observable Graph
-#     :param M:           Number of missing nodes
-#     :param C:           Number of communities
-#     :param N0:
-#     :param Phi_init:    Initialized Kronecker parameter matrix
-#     :param epsilon:     Threshold for determining influential nodes
-#     :param delta:       Threshold determining communities
-#     :param Ni_detect:
-#     :return:            Dictionary int -> list. Each value of the dictionary is a detected community
-#     """
-#
-#     # Initialization step
-#     Dmin = math.inf
-#     Psi = {}
-#     for c in range(1, C):
-#         Psi[c] = []
-#
-#     # Starting step
-#     A = networkx.linalg.graphmatrix.adjacency_matrix(Graph)
-#     Ar = GraphRecv(A, N0, Phi_init, M)
-#     H, r = NodeSelect(Ar, M, epsilon)
-#     Fcap = None
-#     icap = -1
-#
-#     # Iteration step
-#     for i in range(1, H):
-#         Ar = ConnectNodes(Graph, r)
-#         D, F = CommunDet(Ar, C, Ni_detect)
-#         D = D - Lambda * math.log10(i + 1)
-#         if Dmin < D:
-#             Fcap = F
-#             icap = i
-#             Dmin = D
-#
-#     # Second iteration step
-#     for u in range(1, N + M):
-#         for c in range(1, C):
-#             if Fcap_uc >= delta:
-#                 Psi[c].append(u)
-
-
-# def KroMFac(Graph: networkx.Graph, M, C, N0, Phi_init, alpha, beta, epsilon, delta, Ni_percent_select, Lambda):
-#     """
-#     Performs Overlapping Community Detection on Partially Observable Graphs.
-#     Based on the following paper:
-#     Tran, C., Shin, W., Spitz, A., "Community detection in Partially Observable Social Networks"
-#
-#     :param Graph:               Observable Graph
-#     :param M:                   Number of missing nodes
-#     :param C:                   Number of communities
-#     :param N0:                  Dimension of Phi_init. Phi init belongs to [0, 1]^N0xN0
-#     :param Phi_init:            Initialized Kronecker parameter matrix
-#     :param alpha
-#     :param beta
-#     :param epsilon:             Threshold for determining influential nodes
-#     :param delta:               Threshold determining communities
-#     :param Ni_percent_select:
-#     :param Lambda               Controls the regularization
-#     :return:                    Dictionary int -> list. Each value of the dictionary is a detected community
-#     """
-#
-#     ##### Initialization step
-#     Dmin = math.inf
-#     Psi = {}
-#     for c in range(1, C):
-#         Psi[c] = []
-#
-#     ##### Starting step
-#     # Transforms the (partially observable) graph into adjacency matrix
-#     A = networkx.linalg.graphmatrix.adjacency_matrix(Graph)
-#     # Performs Graph recovery to recover the graph
-#     Ar = GraphRecv(A, N0, Phi_init, M)
-#     # Performs node selection to remove ininfluential nodes
-#     H, r = NodeSelect(Ar, M, alpha, beta, epsilon, Ni_percent_select)
-#
-#     # Next steps:
-#     # Ri = Connect nodes r[] to G
-#     # A_ir = Adjacency matrix of Ri
-#     # if C is known:
-#     #   D, F = BIGCLAM(A_ir, C, Ni_detect
-#     # else:
-#     #   D, F = BNMF(A_ir, Ni_detect)
-#     # D = D - Lambda * math.log(i + 1)
-#     # if Dmin < D:
-#     # F_estimated = F
-#     # i_estimated = i
-#     # Dmin = D
-#
-#     # for u in range(1, N + M + 1):
-#     #   for c in range(1, C + 1):
-#     #       if F_estimated[u][c] >= delta:
-#     #           Psi[c] = Psi[c] union {u}
-#
-#     # return Psi
 
 
 

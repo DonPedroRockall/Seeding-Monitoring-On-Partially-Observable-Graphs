@@ -55,10 +55,7 @@ def comp_mis_prob_from_C(graph, C, dst):
 def mis_det_prob(graph, src, trg, conn):
     bfs_curr = bfs_lab(graph, src)
 
-    if trg not in bfs_curr:
-        DrawGraph(graph)
-
-    if bfs_curr[trg] == -1:
+    if trg not in bfs_curr or bfs_curr[trg] == -1:
         return 0
 
     dst = bfs_curr[trg]

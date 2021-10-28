@@ -2,6 +2,8 @@ import networkx as nx
 from networkx.algorithms.flow import *
 from collections import deque
 
+from Utilities.DrawGraph import DrawGraph
+
 
 def bfs_res(ResGraph, src):
 	heights = dict()
@@ -102,7 +104,14 @@ def chooseMs(cutset, source, target, verbose=False):
 		cut_graph.add_edge(v, 't', weight=1)
 
 	if len(cut_graph.edges()) != 0:
-		R = edmonds_karp(cut_graph, 's', 't')
+		try:
+			R = edmonds_karp(cut_graph, 's', 't')
+		except:
+			print("EfficientAlgoritm.py @ 110")
+			print("source:", source)
+			print("target:", target)
+			print(cut_graph.edges(data=True))
+			DrawGraph(cut_graph)
 		A = reachable_residual_graph(R, 's')
 		B = set(cut_graph.nodes()) - A
 		cut_graph_cutset = computeCutset(cut_graph, A, B)
