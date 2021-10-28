@@ -78,4 +78,4 @@ for k in range(1, SEED_RANGE, 5):
     t = AddRow(t, k, round(Avg(mean_full_vote), 2), round(Avg(mean_part_vote), 2), round(Avg(mean_rec_vote), 2),
                round(Avg(mean_full_basic), 2), round(Avg(mean_part_basic), 2), round(Avg(mean_rec_basic), 2))
 
-file_obj.write(str(t) + "\n")
+file_obj.write(str(t) + "\n\n")

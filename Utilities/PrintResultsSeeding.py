@@ -5,6 +5,7 @@ def AddRow(t: PrettyTable, k, vr_full, vr_part, vr_recv, bg_full, bg_part, bg_re
     t.add_row([k, vr_full, vr_part, vr_recv, bg_full, bg_part, bg_recv])
     return t
 
+
 def Avg(lst: list):
     return sum(lst) / len(lst)
 
