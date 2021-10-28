@@ -1,4 +1,6 @@
 import random
+import subprocess
+
 import numpy
 import os
 import networkx as nx
@@ -34,7 +36,7 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
 
 
     # Issue cmd command
-    os.system("cmd /c kronfit.exe -i:graph.txt -n0:{0} -m:{1} {2} {3} {4} {5} {6} {7} {8}"
+    subprocess.run("cmd /c kronfit.exe -i:graph.txt -n0:{0} -m:{1} {2} {3} {4} {5} {6} {7} {8}"
               .format(n0,
                       "R" if theta is None else TransformTheta(theta),
                       "" if gd_iterations is None else "-gd:" + str(gd_iterations),
@@ -43,7 +45,7 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
                       "" if max_gd_step is None else "-mxs:" + str(max_gd_step),
                       "" if n_warmup is None else "-w:" + str(n_warmup),
                       "" if n_samples is None else "-s:" + str(n_samples),
-                      "" if swap_prob is None else "-nsp:" + str(swap_prob)))
+                      "" if swap_prob is None else "-nsp:" + str(swap_prob)) + "> nul 2>&1")
     theta_final = numpy.zeros(shape=(n0, n0))
 
     # Open the file that contains the Theta and read it

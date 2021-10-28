@@ -1,0 +1,28 @@
+These tests were conducted in the following conditions:
+    - Diffusion model: INDEPENDENT CASCADE
+    - Distribution function (how to extract the nodes to delete): UNIFORM DISTRIBUTION
+    - Hiding function (how to delete edges): TOTAL NODE CLOSURE
+    - Edges' weights are initialized randomly for each of the 3 graphs. For future tests, we expect to maintain
+      the same weights before and after KronFit
+    - The values shown for each seed value k are the means computed over NUM_ITER iterations of the graph generation and
+      KronFit: for each one of these, both Vote Rank and Basic Greedy algorithms are run NUM_RUN times and the means are
+      computed
+
+######################### TESTS #########################
+
+
+--- GRAPH PARAMETERS ---
+Num. of nodes: 100
+Min. num. of edges: 30
+Num. of nodes to delete: 10
++----+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+
+| k  |      VR_Full      |      VR_Part      |      VR_Recv      |      BG_Full      |      BG_Part      |      BG_Recv      |
++----+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+
+| 1  |       99.38       |       88.34       |       98.81       |       96.62       |       82.66       |       96.28       |
+| 6  |       99.03       |       88.75       |       98.45       |       94.68       |       81.71       |       96.50       |
+| 11 |       99.11       |       88.53       |       98.40       |       94.93       |       82.68       |       96.46       |
+| 16 |       99.05       |       88.53       |       98.51       |       94.44       |       83.83       |       96.14       |
+| 21 |       98.92       |       88.37       |       98.49       |       94.13       |       83.66       |       96.03       |
++----+-------------------+-------------------+-------------------+-------------------+-------------------+-------------------+
+
+
