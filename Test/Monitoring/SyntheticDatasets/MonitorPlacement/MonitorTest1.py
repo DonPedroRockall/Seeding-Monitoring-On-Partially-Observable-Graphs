@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     ParallelDatasetGeneration(num_nodes=150,
                               min_edges=0,
-                              num_to_hide=20,
+                              num_to_hide=40,
                               distr_func=UniformDistribution,
                               hiding_func=TotalNodeClosure,
                               inf_thresh=5,
