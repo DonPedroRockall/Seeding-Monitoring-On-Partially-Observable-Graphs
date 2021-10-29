@@ -28,8 +28,8 @@ if __name__ == "__main__":
                               inf_thresh=5,
                               inf_centr="deg",
                               num_cores=4,
-                              num_graph_per_core=2,
-                              file_path=ROOT_DIR)
+                              num_of_graphs=40,
+                              file_path=ROOT_DIR + "/Datasets/Monitoring/Synthetic/")
 
     """
     for i in range(50):

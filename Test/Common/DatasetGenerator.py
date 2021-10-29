@@ -79,21 +79,26 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
                     graph[u][v][key] = data[key]
 
 
+def test(i=0):
+    print("test", i)
+    return [i]
+
+
 def ParallelDatasetGeneration(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr,
-                              num_cores=4, num_graph_per_core=10, file_path=ROOT):
+                              num_cores=4, num_of_graphs=10, file_path=ROOT):
     # Result storage
     graph_list = Parallel(n_jobs=num_cores)(delayed
                                   (GenerateRandomGraphTriple)                       # Function call
                                   (num_nodes, min_edges, num_to_hide, distr_func,
                                    hiding_func, inf_thresh, inf_centr, True)        # Function args
-                                   for _ in range(num_graph_per_core))              # Repeat num_graph_per_core times
+                                   for _ in range(num_of_graphs))                   # Repeat num_graph_per_core times
 
     # Write to file
     i = 0
     for full, part, recv in graph_list:
-        nx.write_weighted_edgelist(full, os.path.join(file_path, "/Datasets/Monitoring/Synthetic/" + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt"))
-        nx.write_weighted_edgelist(part, os.path.join(file_path, "/Datasets/Monitoring/Synthetic/" + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt"))
-        nx.write_weighted_edgelist(recv, os.path.join(file_path, "/Datasets/Monitoring/Synthetic/" + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt"))
+        nx.write_weighted_edgelist(full, file_path + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(part, file_path + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(recv, file_path + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
         i += 1
 
     # Return if needed
