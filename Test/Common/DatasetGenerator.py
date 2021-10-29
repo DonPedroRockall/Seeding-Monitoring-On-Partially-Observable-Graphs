@@ -1,12 +1,14 @@
-import copy
+import os.path
 
-import networkx
 import networkx as nx
+
+from joblib import Parallel, delayed, parallel_backend
 
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
 from Utilities.GraphGenerator import RandomConnectedDirectedGraph
 from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
+from definitions import ROOT_DIR as ROOT
 
 
 def GenerateRandomGraphTriple(number_of_nodes: int,
@@ -15,7 +17,8 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
                               distribution_function=DegreeDistribution,
                               hiding_function=TotalNodeClosure,
                               influential_threshold=0,
-                              influential_centrality="deg"):
+                              influential_centrality="deg",
+                              verbose=False):
     """
     Generates a random triple of graphs.
     The first graph is named "full graph" and is the completely observable graph, the ground truth of the experiment;
@@ -53,7 +56,8 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
         epsilon=influential_threshold, centrality=influential_centrality)
 
     # Print out useful information that is not used in the process (nor returned by this function)
-    print("Number of recovered nodes:", nodes_recovered)
+    if verbose:
+        print("Number of recovered nodes:", nodes_recovered)
 
     # Return the triple
     return full_graph, part_obs_graph, reconstructed_graph
@@ -73,3 +77,23 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list[nx.
                 for key in data:
                     graph[u][v][key] = data[key]
 
+
+def ParallelDatasetGeneration(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr,
+                              num_cores=4, num_graph_per_core=10, file_path=ROOT):
+    with parallel_backend("threading", n_jobs=num_cores):
+        # Result storage                Function call             Function args
+        graph_list = Parallel()(delayed(GenerateRandomGraphTriple)(num_nodes, min_edges, num_to_hide, distr_func,
+                                                                   hiding_func, inf_thresh, inf_centr, True)
+                                                                   # Repeat
+                                                                   for _ in range(num_graph_per_core))
+
+    # Write to file
+    i = 0
+    for full, part, recv in graph_list:
+        nx.write_weighted_edgelist(full, os.path.join(file_path, "/Datasets/Monitoring/Synthetic/" + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt"))
+        nx.write_weighted_edgelist(part, os.path.join(file_path, "/Datasets/Monitoring/Synthetic/" + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt"))
+        nx.write_weighted_edgelist(recv, os.path.join(file_path, "/Datasets/Monitoring/Synthetic/" + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt"))
+        i += 1
+
+    # Return if needed
+    return graph_list

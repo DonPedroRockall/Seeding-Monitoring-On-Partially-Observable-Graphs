@@ -1,14 +1,17 @@
 import random
 
+import networkx
 import networkx as nx
+from networkx.algorithms.flow import edmonds_karp
 
 from Monitoring.Monitor import PlaceMonitors
-from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, SetSameWeightsToOtherGraphs
+from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, SetSameWeightsToOtherGraphs, \
+    ParallelDatasetGeneration
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
 from Test.Common.WeightRandomizer import SetRandomEdgeWeights
 from Utilities.DrawGraph import DrawGraph
-
+from definitions import ROOT_DIR
 
 if __name__ == "__main__":
 
@@ -16,6 +19,17 @@ if __name__ == "__main__":
     NUM_NODES = 150
     NUM_SOURCES = 5
     NUM_TARGETS = 1
+
+    ParallelDatasetGeneration(num_nodes=150,
+                              min_edges=0,
+                              num_to_hide=10,
+                              distr_func=UniformDistribution,
+                              hiding_func=TotalNodeClosure,
+                              inf_thresh=5,
+                              inf_centr="deg",
+                              num_cores=4,
+                              num_graph_per_core=2,
+                              file_path=ROOT_DIR)
 
     for i in range(50):
 

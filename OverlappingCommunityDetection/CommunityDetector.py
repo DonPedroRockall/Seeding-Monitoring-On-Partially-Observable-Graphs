@@ -3,7 +3,7 @@ import networkx
 from KronFit.KroneckerFit import *
 
 
-def InfluentialNodeRecovery(graph: networkx.Graph, M, N0, alpha=None, beta=None, epsilon=0, centrality="deg"):
+def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=None, epsilon=0, centrality="deg"):
     """
     Estimates and recovers a number of influential nodes from a partially observable graph
     :param graph:           The original observable graph
@@ -36,7 +36,7 @@ def InfluentialNodeRecovery(graph: networkx.Graph, M, N0, alpha=None, beta=None,
     estimated_graph = ConnectNodes(graph, Ar, r)
 
     # If necessary, transform back the graph to undirected
-    if graph_was_directed:
+    if not graph_was_directed:
         estimated_graph = networkx.to_undirected(estimated_graph)
 
     return estimated_graph, H

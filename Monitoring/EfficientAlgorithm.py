@@ -65,7 +65,7 @@ def reachable_residual_graph(ResGraph, src):
 		u, height = q.popleft()
 		height += 1
 		for v, attr in ResGraph.succ[u].items():
-			if v not in heights and ResGraph.succ[u][v]['flow'] < ResGraph.succ[u][v]['weight']:
+			if v not in heights and ResGraph.succ[u][v]['flow'] < ResGraph.succ[u][v]['capacity']:
 				heights[v] = height
 				q.append((v, height))
 				rc.add(v)
@@ -82,11 +82,11 @@ def cutGraph(cutset, source, target):
 	for (u, v) in cutset:
 		if u != source:
 			if v != target or (v == target and not c_st):
-				cg.add_edge(u, v, weight=1)
+				cg.add_edge(u, v, capacity=1)
 	return cg
 
 
-def chooseMs(cutset, source, target, verbose=False):
+def chooseMs(cutset, source, target):
 	cut_graph = cutGraph(cutset, source, target)
 	m = set()
 
@@ -104,15 +104,8 @@ def chooseMs(cutset, source, target, verbose=False):
 		cut_graph.add_edge(v, 't', weight=1)
 
 	if len(cut_graph.edges()) != 0:
-		try:
-			R = edmonds_karp(cut_graph, 's', 't')
-		except Exception as e:
-			print("EfficientAlgoritm.py @ 110")
-			print(e)
-			print("source:", source)
-			print("target:", target)
-			print(cut_graph.edges(data=True))
-			DrawGraph(cut_graph)
+
+		R = edmonds_karp(cut_graph, 's', 't')
 		A = reachable_residual_graph(R, 's')
 		B = set(cut_graph.nodes()) - A
 		cut_graph_cutset = computeCutset(cut_graph, A, B)
