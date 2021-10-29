@@ -6,6 +6,8 @@ import os
 import os.path
 import networkx as nx
 from networkx import DiGraph
+
+from Utilities.ColorPrints import cprint, bcolors
 from definitions import SNAP_EXE_PATH
 
 
@@ -60,7 +62,7 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
                            "" if n_samples is None else "-s:" + str(n_samples),
                            "" if swap_prob is None else "-nsp:" + str(swap_prob)) + "> nul 2>&1")
     theta_final = numpy.zeros(shape=(n0, n0))
-    print("KRONFIT terminated for graph", path + ext)
+    cprint(bcolors.OKBLUE, "KRONFIT terminated for graph", path + ext)
 
     # Open the file that contains the Theta and read it
     with open(path + '-fit' + str(n0)) as f:
