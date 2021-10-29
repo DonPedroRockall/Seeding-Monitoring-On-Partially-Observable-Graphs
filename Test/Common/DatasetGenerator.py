@@ -88,17 +88,44 @@ def ParallelDatasetGeneration(num_nodes, min_edges, num_to_hide, distr_func, hid
                               num_cores=4, num_of_graphs=10, file_path=ROOT):
     # Result storage
     graph_list = Parallel(n_jobs=num_cores)(delayed
-                                  (GenerateRandomGraphTriple)                       # Function call
-                                  (num_nodes, min_edges, num_to_hide, distr_func,
-                                   hiding_func, inf_thresh, inf_centr, True)        # Function args
-                                   for _ in range(num_of_graphs))                   # Repeat num_graph_per_core times
+                                            (GenerateRandomGraphTriple)  # Function call
+                                            (num_nodes, min_edges, num_to_hide, distr_func,
+                                             hiding_func, inf_thresh, inf_centr, True)  # Function args
+                                            for _ in range(num_of_graphs))  # Repeat num_graph_per_core times
 
     # Write to file
     i = 0
     for full, part, recv in graph_list:
-        nx.write_weighted_edgelist(full, file_path + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
-        nx.write_weighted_edgelist(part, file_path + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
-        nx.write_weighted_edgelist(recv, file_path + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(full, file_path + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(
+            inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(part, file_path + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(
+            inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(recv, file_path + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(
+            inf_thresh) + ".txt")
+        i += 1
+
+    # Return if needed
+    return graph_list
+
+
+def ParallelDatasetGenerationSeed(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh=5,
+                                  inf_centr="deg", num_cores=4, num_of_graphs=10, file_path=ROOT):
+    # Result storage
+    graph_list = Parallel(n_jobs=num_cores)(delayed
+                                            (GenerateRandomGraphTriple)  # Function call
+                                            (num_nodes, min_edges, num_to_hide, distr_func,
+                                             hiding_func, inf_thresh, inf_centr, True)  # Function args
+                                            for _ in range(num_of_graphs))  # Repeat num_graph_per_core times
+
+    # Write to file
+    i = 0
+    for full, part, recv in graph_list:
+        nx.write_weighted_edgelist(full,
+                                   file_path + str(i) + "_full_" + str(num_nodes) + "_hid_" + str(num_to_hide) + ".txt")
+        nx.write_weighted_edgelist(part,
+                                   file_path + str(i) + "_part_" + str(num_nodes) + "_hid_" + str(num_to_hide) + ".txt")
+        nx.write_weighted_edgelist(recv,
+                                   file_path + str(i) + "_recv_" + str(num_nodes) + "_hid_" + str(num_to_hide) + ".txt")
         i += 1
 
     # Return if needed

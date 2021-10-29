@@ -1,0 +1,10 @@
+These tests were conducted in the following conditions:
+    - Diffusion model: INDEPENDENT CASCADE
+    - Distribution function (how to extract the nodes to delete): UNIFORM DISTRIBUTION
+    - Hiding function (how to delete edges): TOTAL NODE CLOSURE
+    - Conditions are the same as Test_1, but now we make inference over graph parameters
+
+
+######################### TESTS #########################
+
+
