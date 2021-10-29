@@ -31,6 +31,7 @@ if __name__ == "__main__":
                               num_graph_per_core=2,
                               file_path=ROOT_DIR)
 
+    """
     for i in range(50):
 
         # Generate the graph triplet
@@ -64,7 +65,7 @@ if __name__ == "__main__":
         monitors_recv = PlaceMonitors(recv, sources, targets, delta=1, tau=0.1, cascade_iterations=100, verbose=True)
 
         # Run the independent cascade on the three graphs
-
+    """
 
 
 

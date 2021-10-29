@@ -2,7 +2,7 @@ import os.path
 
 import networkx as nx
 
-from joblib import Parallel, delayed, parallel_backend
+from joblib import Parallel, delayed
 
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
@@ -38,6 +38,7 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
                                         to be considered influential. For example, selecting "deg" (degree centrality) and
                                         setting this parameter to 5, means that a reconstructed node has to have a degree
                                         of at least 5 to be considered influential and thus to be recovered
+    :param verbose:
     :return: A triple of graphs as described above
     """
 
@@ -80,12 +81,12 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
 
 def ParallelDatasetGeneration(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr,
                               num_cores=4, num_graph_per_core=10, file_path=ROOT):
-    with parallel_backend("threading", n_jobs=num_cores):
-        # Result storage                Function call             Function args
-        graph_list = Parallel()(delayed(GenerateRandomGraphTriple)(num_nodes, min_edges, num_to_hide, distr_func,
-                                                                   hiding_func, inf_thresh, inf_centr, True)
-                                                                   # Repeat
-                                                                   for _ in range(num_graph_per_core))
+    # Result storage
+    graph_list = Parallel(n_jobs=num_cores)(delayed
+                                  (GenerateRandomGraphTriple)                       # Function call
+                                  (num_nodes, min_edges, num_to_hide, distr_func,
+                                   hiding_func, inf_thresh, inf_centr, True)        # Function args
+                                   for _ in range(num_graph_per_core))              # Repeat num_graph_per_core times
 
     # Write to file
     i = 0

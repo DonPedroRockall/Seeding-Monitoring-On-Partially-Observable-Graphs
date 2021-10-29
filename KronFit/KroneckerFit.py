@@ -3,6 +3,7 @@ import subprocess
 
 import numpy
 import os
+import os.path
 import networkx as nx
 from networkx import DiGraph
 from definitions import SNAP_EXE_PATH
@@ -31,11 +32,24 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
     os.chdir(SNAP_EXE_PATH)
 
     # Write edge list to file
-    nx.write_edgelist(graph, "graph.txt", data=False)
+    # The next lines are used for when multiple KronFit threads/processes are running in parallel
+    # In this case we have to check if the file "graph.txt" already exists and if so, use another file path
+    i = 0
+    path = "graph"
+    ext = ".txt"
+    if os.path.isfile(path + ext):
+        print("Path", path, "is already used. Trying a different file name")
+        while os.path.isfile(path + str(i) + ext):
+            print("Trying path", path + str(i) + ext)
+            i += 1
+        path = path + str(i)
+    print("Found path at", path + ext)
+
+    nx.write_edgelist(graph, path + ext, data=False)
 
     # Issue cmd command
     print("Executing KRONFIT algorithm (output is suppressed)")
-    subprocess.run("cmd /c kronfit.exe -i:graph.txt -n0:{0} -m:{1} {2} {3} {4} {5} {6} {7} {8}"
+    subprocess.run("cmd /c kronfit.exe -i:" + path + ext + " -n0:{0} -m:{1} {2} {3} {4} {5} {6} {7} {8}"
                    .format(n0,
                            "R" if theta is None else TransformTheta(theta),
                            "" if gd_iterations is None else "-gd:" + str(gd_iterations),
@@ -46,9 +60,10 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
                            "" if n_samples is None else "-s:" + str(n_samples),
                            "" if swap_prob is None else "-nsp:" + str(swap_prob)) + "> nul 2>&1")
     theta_final = numpy.zeros(shape=(n0, n0))
+    print("KRONFIT terminated for graph", path + ext)
 
     # Open the file that contains the Theta and read it
-    with open('graph-fit' + str(n0)) as f:
+    with open(path + '-fit' + str(n0)) as f:
         last_line = f.readlines()[-1]
     result = (last_line.split("[")[-1])[:-2]
     params = result.split("; ")
@@ -60,8 +75,8 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
             theta_final[i, j] = float(t)
 
     # Remove leftover files
-    os.remove("graph-fit" + str(n0))
-    os.remove("graph.txt")
+    os.remove(path + "-fit" + str(n0))
+    os.remove(path + ext)
 
     return theta_final
 
