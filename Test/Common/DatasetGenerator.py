@@ -6,6 +6,7 @@ from joblib import Parallel, delayed
 
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
+from Utilities.ColorPrints import *
 from Utilities.GraphGenerator import RandomConnectedDirectedGraph
 from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
 from definitions import ROOT_DIR as ROOT
@@ -51,6 +52,14 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 
     part_obs_graph = hiding_function(part_obs_graph, nodes_to_hide)
 
+    cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
+
+    # Adaptive Influential Treshold
+    if influential_threshold is None:
+        influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(part_obs_graph.number_of_nodes())
+
+    print("test")
+
     # Reconstruct the graph
     reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(
         part_obs_graph.copy(), num_nodes_to_hide, N0=2, alpha=None, beta=None,
@@ -79,19 +88,10 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
                     graph[u][v][key] = data[key]
 
 
-def test(i=0):
-    print("test", i)
-    return [i]
-
-
 def ParallelDatasetGeneration(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr,
                               num_cores=4, num_of_graphs=10, file_path=ROOT):
     # Result storage
-    graph_list = Parallel(n_jobs=num_cores)(delayed
-                                  (GenerateRandomGraphTriple)                       # Function call
-                                  (num_nodes, min_edges, num_to_hide, distr_func,
-                                   hiding_func, inf_thresh, inf_centr, True)        # Function args
-                                   for _ in range(num_of_graphs))                   # Repeat num_graph_per_core times
+    graph_list = Parallel(n_jobs=num_cores)(delayed(GenerateRandomGraphTriple)(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr, True) for _ in range(num_of_graphs))
 
     # Write to file
     i = 0

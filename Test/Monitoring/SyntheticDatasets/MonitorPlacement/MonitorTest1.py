@@ -16,20 +16,20 @@ from definitions import ROOT_DIR
 if __name__ == "__main__":
 
     # Common test config
-    NUM_NODES = 150
+    NUM_NODES = 15000
     NUM_SOURCES = 5
     NUM_TARGETS = 1
 
-    ParallelDatasetGeneration(num_nodes=150,
+    ParallelDatasetGeneration(num_nodes=NUM_NODES,
                               min_edges=0,
-                              num_to_hide=40,
-                              distr_func=UniformDistribution,
+                              num_to_hide=80,
+                              distr_func=DegreeDistribution,
                               hiding_func=TotalNodeClosure,
-                              inf_thresh=5,
+                              inf_thresh=None,
                               inf_centr="deg",
-                              num_cores=4,
-                              num_of_graphs=40,
-                              file_path=ROOT_DIR + "/Datasets/Monitoring/Synthetic/")
+                              num_cores=8,
+                              num_of_graphs=20,
+                              file_path=ROOT_DIR + "/Datasets/Synthetic/DegreeDist/Big_15k/")
 
     """
     for i in range(50):
