@@ -29,7 +29,7 @@ if __name__ == "__main__":
                               inf_centr="deg",
                               num_cores=4,
                               num_of_graphs=40,
-                              file_path=ROOT_DIR + "/Datasets/Monitoring/Synthetic/")
+                              file_path=ROOT_DIR + "/Datasets/Monitoring/Synthetic_1/")
 
     """
     for i in range(50):

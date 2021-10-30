@@ -12,15 +12,15 @@ from definitions import ROOT_DIR
 NUM_RUN = 50
 NUM_ITER = 5  # recommended not to set higher
 k = 10  # recommended not to set higher
-NUM_NODES = 300
+NUM_NODES = 1000
 MIN_EDGES = 100
-NODES_TO_DELETE = 30
+NODES_TO_DELETE = 100
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
 ##############################################################
 
 ParallelDatasetGenerationSeed(NUM_NODES, MIN_EDGES, NODES_TO_DELETE, DISTRIBUTION, HIDING, num_of_graphs=30,
-                              file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic/")
+                              file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic_2/")
 
 '''
 active_per_run_full = list()
