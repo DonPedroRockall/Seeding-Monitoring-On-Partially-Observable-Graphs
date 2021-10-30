@@ -14,7 +14,7 @@ NUM_ITER = 5  # recommended not to set higher
 k = 10  # recommended not to set higher
 NUM_NODES = 1000
 MIN_EDGES = 100
-NODES_TO_DELETE = 100
+NODES_TO_DELETE = 120
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
 ##############################################################
