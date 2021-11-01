@@ -9,10 +9,10 @@ from prettytable import PrettyTable
 from definitions import ROOT_DIR
 import time
 
-###################### TEST PARAMETERS  ######################
-# You can change the following parameters for various purposes
-NUM_ITER = 5  # recommended not to set higher
-SEED_RANGE = 32  # recommended not to set higher
+####################### TEST PARAMETERS  #######################
+# You can change the following parameters for various test cases
+NUM_ITER = 5
+SEED_RANGE = 32
 NUM_RUN = 40
 
 NUM_NODES = 300
@@ -20,7 +20,7 @@ NUM_NODES = 300
 NODES_TO_DELETE = 50
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
-##############################################################
+################################################################
 
 # ParallelDatasetGenerationSeed(NUM_NODES, MIN_EDGES, NODES_TO_DELETE, DISTRIBUTION, HIDING, num_of_graphs=30,
 #                              file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic_3/")
@@ -67,13 +67,9 @@ for i in range(5, 10):
         mean_part_vote = ParallelSIMVoterank(part, k, num_run=NUM_RUN)
         mean_recv_vote = ParallelSIMVoterank(recv, k, num_run=NUM_RUN)
 
-        print("vote rank done")
-
         mean_full_basic = ParallelSIMBasicGreedy(full, k, num_iter=NUM_RUN)
         mean_part_basic = ParallelSIMBasicGreedy(part, k, num_iter=NUM_RUN)
         mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_iter=NUM_RUN)
-
-        print("basic greedy done")
 
         end = time.time()
 
