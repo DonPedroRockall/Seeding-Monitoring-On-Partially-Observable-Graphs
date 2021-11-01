@@ -67,9 +67,9 @@ for i in range(5, 10):
         mean_part_vote = ParallelSIMVoterank(part, k, num_run=NUM_RUN)
         mean_recv_vote = ParallelSIMVoterank(recv, k, num_run=NUM_RUN)
 
-        mean_full_basic = ParallelSIMBasicGreedy(full, k, num_iter=NUM_RUN)
-        mean_part_basic = ParallelSIMBasicGreedy(part, k, num_iter=NUM_RUN)
-        mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_iter=NUM_RUN)
+        mean_full_basic = ParallelSIMBasicGreedy(full, k, num_run=NUM_RUN)
+        mean_part_basic = ParallelSIMBasicGreedy(part, k, num_run=NUM_RUN)
+        mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_run=NUM_RUN)
 
         end = time.time()
 

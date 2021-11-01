@@ -74,9 +74,9 @@ def SIMBasicGreedy(G: nx.DiGraph, k):
 
 
 # PARALLEL VERSION: returns the average over num_iter executions of the algorithm
-def ParallelSIMBasicGreedy(G: nx.DiGraph, k, num_cores=8, num_iter=40):
+def ParallelSIMBasicGreedy(G: nx.DiGraph, k, num_cores=8, num_run=40):
     active_per_run = Parallel(n_jobs=num_cores)(delayed(SIMBasicGreedy)
-                                                (G, k) for _ in range(num_iter))
+                                                (G, k) for _ in range(num_run))
     return Avg(active_per_run)
 
 
