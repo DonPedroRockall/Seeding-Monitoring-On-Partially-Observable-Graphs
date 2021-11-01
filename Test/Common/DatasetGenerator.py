@@ -64,7 +64,7 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     return full_graph, part_obs_graph, reconstructed_graph
 
 
-def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
+def SetSameWeightsToOtherGraphs(original_graph: nx.DiGraph, other_graphs: list):
     """
     Copies all the attributes of original_graph to all the other graphs in other_graphs list, without altering the
     structure of the graph(s) itself. (I.E.: it will not create new nodes or new edges, every graph will stay the same)

@@ -1,24 +1,26 @@
 import math
+from joblib import Parallel, delayed
 
 import networkx as nx
 import numpy
 import random
-from Utilities.DrawGraph import DrawGraph
+from Utilities.PrintResultsSeeding import Avg
 
 # for the IC model, we only need the edge weights (assigned randomly in the range [0, 1]);
 # in the following, the adjectives 'influenced' and 'activated' are used interchangeably
-
-influence = {}
 
 
 def InitGraphParametersIC(G: nx.DiGraph):
     for u, v, data in G.edges(data=True):
         data['weight'] = random.uniform(0, 1)
-    for node in G.nodes():
-        influence[node] = 0
 
 
 def RunIC(G: nx.DiGraph, seeds: list):
+    influence = {}
+
+    for node in G.nodes():
+        influence[node] = 0
+
     active_nodes = []
 
     # set all the seeds' influence to 1 and add them to active_nodes
@@ -38,11 +40,7 @@ def RunIC(G: nx.DiGraph, seeds: list):
                     active_nodes.append(v)
                     is_there_new_influenced = True
 
-    # reset influence to 0 for all nodes for a later use of the algorithm
-    for node in G.nodes():
-        influence[node] = 0
-
-    return active_nodes
+    return len(active_nodes)
 
 
 ###################### SEED SELECTION ALGORITHMS ######################
@@ -61,7 +59,7 @@ def SIMBasicGreedy(G: nx.DiGraph, k):
         for node in G.nodes():
             if node not in seed_set:
                 seed_set.append(node)
-                gain = len(RunIC(G, seed_set)) - active_nodes
+                gain = RunIC(G, seed_set) - active_nodes
                 seed_set.pop()
                 if gain > max_gain:
                     max_gain = gain
@@ -74,13 +72,12 @@ def SIMBasicGreedy(G: nx.DiGraph, k):
 
     return RunIC(G, seed_set)
 
-'''
-    print("############### BASIC GREEDY ###############")
-    print("Basic Greedy seed set: ", seed_set)
-    activated = RunIC(G, seed_set)
-    print("Activated nodes: ", activated)
-    print("Num. of activated nodes: ", len(activated))
-    print("############################################")'''
+
+# PARALLEL VERSION: returns the average over num_iter executions of the algorithm
+def ParallelSIMBasicGreedy(G: nx.DiGraph, k, num_cores=8, num_iter=40):
+    active_per_run = Parallel(n_jobs=num_cores)(delayed(SIMBasicGreedy)
+                                                (G, k) for _ in range(num_iter))
+    return Avg(active_per_run)
 
 
 # [HEURISTIC] computes the best nodes based on vote-rank centrality, with an upper limit given by the value k;
@@ -94,10 +91,10 @@ def SIMVoterank(G: nx.DiGraph, k):
         vote_rank = temp
     return RunIC(G, vote_rank)
 
-'''
-    print("############### VOTERANK ###############")
-    print("Vote-rank seed set: ", vote_rank)
-    activated = RunIC(G, vote_rank)
-    print("Activated nodes: ", activated)
-    print("Num. of activated nodes: ", len(activated))
-    print("########################################")'''
+
+# PARALLEL VERSION: returns the average over num_iter executions of the algorithm
+def ParallelSIMVoterank(G: nx.DiGraph, k, num_cores=8, num_run=40):
+
+    active_per_run = Parallel(n_jobs=num_cores)(delayed(SIMVoterank)(G, k) for _ in range(num_run))
+
+    return Avg(active_per_run)
