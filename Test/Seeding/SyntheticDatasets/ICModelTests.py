@@ -13,11 +13,12 @@ import time
 # You can change the following parameters for various test cases
 NUM_ITER = 5
 SEED_RANGE = 32
-NUM_RUN = 40
+NUM_RUN = 10
+NUM_CORES = 8
 
-NUM_NODES = 300
+NUM_NODES = 1000
 # MIN_EDGES = 100
-NODES_TO_DELETE = 50
+NODES_TO_DELETE = 100
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
 ################################################################
@@ -35,21 +36,21 @@ test_file.write("--- GRAPH PARAMETERS ---" +
                 "\nHiding function: Total Node Closure" +
                 "\n\n")
 iter = 0
-
-for i in range(5, 10):
+start1 = time.time()
+for i in range(8, 13):
 
     test_file.write(str(iter + 1) + ")\n")
     t = CreateTable()
 
     print("iter = " + str(iter))
 
-    full = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_1/" + str(i) + "_full_"
+    full = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_full_"
                                      + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
                                      create_using=nx.DiGraph)
-    part = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_1/" + str(i) + "_part_"
+    part = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_part_"
                                      + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
                                      create_using=nx.DiGraph)
-    recv = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_1/" + str(i) + "_recv_"
+    recv = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_recv_"
                                      + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
                                      create_using=nx.DiGraph)
 
@@ -58,22 +59,21 @@ for i in range(5, 10):
     InitGraphParametersIC(recv)
     SetSameWeightsToOtherGraphs(full, [part, recv])
 
-    for k in range(1, SEED_RANGE, 5):
-        print("\nk = " + str(k))
+    for k in range(1, SEED_RANGE, 10):
 
         start = time.time()
 
-        mean_full_vote = ParallelSIMVoterank(full, k, num_run=NUM_RUN)
-        mean_part_vote = ParallelSIMVoterank(part, k, num_run=NUM_RUN)
-        mean_recv_vote = ParallelSIMVoterank(recv, k, num_run=NUM_RUN)
+        mean_full_vote = ParallelSIMVoterank(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_part_vote = ParallelSIMVoterank(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_recv_vote = ParallelSIMVoterank(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN)
 
-        mean_full_basic = ParallelSIMBasicGreedy(full, k, num_run=NUM_RUN)
-        mean_part_basic = ParallelSIMBasicGreedy(part, k, num_run=NUM_RUN)
-        mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_run=NUM_RUN)
+        mean_full_basic = ParallelSIMBasicGreedy(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_part_basic = ParallelSIMBasicGreedy(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN)
 
         end = time.time()
 
-        print("\nExecution time for iteration " + str(iter + 1) + ": " + str(end - start))
+        print("\nExecution time for iteration " + str(iter + 1) + "-" + str(k) + ": " + str(end - start))
 
         t = AddRow(t, k,
                    round(mean_full_vote, 2),
@@ -85,3 +85,7 @@ for i in range(5, 10):
 
     iter += 1
     test_file.write(str(t) + "\n\n")
+
+end1 = time.time()
+
+print("Total exec time: " + str((end1-start1)/3600) + " hrs")
