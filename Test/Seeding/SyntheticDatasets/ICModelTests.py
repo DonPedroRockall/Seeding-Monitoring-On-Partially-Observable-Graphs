@@ -14,19 +14,20 @@ import time
 NUM_ITER = 5
 SEED_RANGE = 32
 NUM_RUN = 10
-NUM_CORES = 8
+NUM_CORES = 4
 
-NUM_NODES = 1000
-# MIN_EDGES = 100
-NODES_TO_DELETE = 100
+NUM_NODES = 2000
+MIN_EDGES = 100
+NODES_TO_DELETE = 1000
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
 ################################################################
 
-# ParallelDatasetGenerationSeed(NUM_NODES, MIN_EDGES, NODES_TO_DELETE, DISTRIBUTION, HIDING, num_of_graphs=30,
-#                              file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic_3/")
+ParallelDatasetGenerationSeed(NUM_NODES, MIN_EDGES, NODES_TO_DELETE, DISTRIBUTION, HIDING, num_of_graphs=30,
+                             file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic_3/")
 
 
+'''
 test_file = open("../Results/IC_model/Test_2", "a")
 test_file.write("--- GRAPH PARAMETERS ---" +
                 "\nModel: IC" +
@@ -37,12 +38,10 @@ test_file.write("--- GRAPH PARAMETERS ---" +
                 "\n\n")
 iter = 0
 start1 = time.time()
-for i in range(8, 13):
+for i in range(20, 25):
 
     test_file.write(str(iter + 1) + ")\n")
     t = CreateTable()
-
-    print("iter = " + str(iter))
 
     full = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_full_"
                                      + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
@@ -73,7 +72,7 @@ for i in range(8, 13):
 
         end = time.time()
 
-        print("\nExecution time for iteration " + str(iter + 1) + "-" + str(k) + ": " + str(end - start))
+        print("\nExecution time for iteration " + str(iter + 1) + "-" + str(k) + ": " + str(round((end - start)/60, 2)) + " mins")
 
         t = AddRow(t, k,
                    round(mean_full_vote, 2),
@@ -88,4 +87,4 @@ for i in range(8, 13):
 
 end1 = time.time()
 
-print("Total exec time: " + str((end1-start1)/3600) + " hrs")
+print("Total exec time: " + str(round((end1-start1)/3600, 2)) + " hrs")'''
