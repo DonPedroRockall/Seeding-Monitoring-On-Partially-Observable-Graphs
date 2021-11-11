@@ -86,7 +86,7 @@ def ContractNodes(graph: networkx.DiGraph, to_contract: list, target_label="supe
         return graph
     init_node = to_contract[0]
     for x in range(len(to_contract)):
-        print(contracted_graph.nodes(), init_node, to_contract[x])
+        # print(contracted_graph.nodes(), init_node, to_contract[x])
         networkx.contracted_nodes(contracted_graph, init_node, to_contract[x], self_loops=False, copy=False)
     networkx.relabel_nodes(graph, {init_node: target_label})
     return contracted_graph, init_node

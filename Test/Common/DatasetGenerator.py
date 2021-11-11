@@ -7,14 +7,14 @@ from joblib import Parallel, delayed
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
 from Utilities.ColorPrints import *
-from Utilities.GraphGenerator import RandomConnectedDirectedGraph
+from Utilities.GraphGenerator import RandomConnectedDirectedGraph, GNCConnectedDirectedGraph
 from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
 from definitions import ROOT_DIR as ROOT
 
 
 def GenerateRandomGraphTriple(number_of_nodes: int,
-                              minimum_num_of_edges: int,
                               num_nodes_to_hide: int,
+                              generation_function=GNCConnectedDirectedGraph,
                               distribution_function=DegreeDistribution,
                               hiding_function=TotalNodeClosure,
                               influential_threshold=0,
@@ -27,9 +27,8 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     a given distribution;
     The Third one is named "reconstructed graph", and it is obtained by performing an "Influential Node Recovery
     :param number_of_nodes:             Number of nodes of the full graph
-    :param minimum_num_of_edges:        Minimum number of edges of the full graph. The algorithm will continue to add edges
-                                        until it is strongly connected
     :param num_nodes_to_hide:           Number of nodes to hide
+    :param generation_function:         Function to use to generate the random initial full graph
     :param distribution_function:       Function(graph, int) -> list<nodes> that chooses the nodes to hide
     :param hiding_function:             Function(graph, list<nodes>) -> graph that chooses which edges to hide
     :param influential_centrality:      The centrality measure to use to choose which nodes are influential and have to be
@@ -44,7 +43,7 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     """
 
     # Generate a full graph
-    full_graph = RandomConnectedDirectedGraph(number_of_nodes, minimum_num_of_edges)
+    full_graph = generation_function(number_of_nodes)
 
     # Generate a copy and start removing edges
     part_obs_graph = full_graph.copy()
@@ -58,8 +57,6 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     if influential_threshold is None:
         influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(part_obs_graph.number_of_nodes())
 
-    print("test")
-
     # Reconstruct the graph
     reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(
         part_obs_graph.copy(), num_nodes_to_hide, N0=2, alpha=None, beta=None,
@@ -67,7 +64,7 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 
     # Print out useful information that is not used in the process (nor returned by this function)
     if verbose:
-        print("Number of recovered nodes:", nodes_recovered)
+        cprint(bcolors.OKBLUE, "Number of recovered nodes:", nodes_recovered)
 
     # Return the triple
     return full_graph, part_obs_graph, reconstructed_graph
@@ -88,10 +85,10 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
                     graph[u][v][key] = data[key]
 
 
-def ParallelDatasetGeneration(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr,
+def ParallelDatasetGeneration(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr,
                               num_cores=4, num_of_graphs=10, file_path=ROOT):
     # Result storage
-    graph_list = Parallel(n_jobs=num_cores)(delayed(GenerateRandomGraphTriple)(num_nodes, min_edges, num_to_hide, distr_func, hiding_func, inf_thresh, inf_centr, True) for _ in range(num_of_graphs))
+    graph_list = Parallel(n_jobs=num_cores)(delayed(GenerateRandomGraphTriple)(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr, True) for _ in range(num_of_graphs))
 
     # Write to file
     i = 0

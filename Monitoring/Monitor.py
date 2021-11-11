@@ -6,15 +6,16 @@ from Monitoring.DiffusionModels import independent_cascade
 from Monitoring.EfficientAlgorithm import eAlgorithm
 from Monitoring.MinimumMonitorSetConstruction import MMSC, N_delta
 from Monitoring.MonitorUtility import contractGraph, SourceContraction
+from Utilities.ColorPrints import *
 from Utilities.DrawGraph import DrawGraph
 from Utilities.GraphGenerator import RandomConnectedDirectedGraph
 
 
 def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=100, verbose=False):
     if verbose:
-        print("Number of Sources =", len(sources))
-        print("SOURCES =", sources)
-        print("TARGET =", targets)
+        cprint(bcolors.OKGREEN, "Number of Sources =", len(sources))
+        cprint(bcolors.OKGREEN, "SOURCES =", sources)
+        cprint(bcolors.OKGREEN, "TARGET =", targets)
 
     # G_source_contracted = contractGraph(graph, sources, new_label="super_source")
     # G_contracted = contractGraph(G_source_contracted, targets, new_label="super_target")
@@ -28,8 +29,8 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
     B = set(n_d)
     m1 = MMSC(G_contracted, B, delta, tau, c_source, c_target)
     if verbose:
-        print("\nMMSC\nMonitor set =", m1, "\nNumber of monitors =", len(m1))
-        print("Num delta neighbors =", delta, ",", len(n_d))
+        cprint(bcolors.OKGREEN, "\nMMSC\nMonitor set =", m1, "\nNumber of monitors =", len(m1))
+        cprint(bcolors.OKGREEN, "Num delta neighbors =", delta, ",", len(n_d))
 
     G_cascade = G_m_test_contracted.copy()
     total_nodes = 0
@@ -42,13 +43,13 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
     c_nodes = total_nodes / cascade_iterations
 
     if verbose:
-        print("\nAVG " + str(cascade_iterations) + " CASCADE: Number of Infected = [", c_nodes, "]\n")
+        cprint(bcolors.OKGREEN, "\nAVG " + str(cascade_iterations) + " CASCADE: Number of Infected = [", c_nodes, "]\n")
 
     m2, inf = eAlgorithm(G_m_test_contracted, c_target, c_nodes, c_source, verbose=verbose)
 
     if verbose:
-        print("\n== MONITOR PLACEMENT REPORT ==\nMonitor set =", m2, "\nNumber of monitors =", len(m2))
-        print("Max number of infected nodes =", inf)
+        cprint(bcolors.OKGREEN, "\n== MONITOR PLACEMENT REPORT ==\nMonitor set =", m2, "\nNumber of monitors =", len(m2))
+        cprint(bcolors.OKGREEN, "Max number of infected nodes =", inf)
 
     return m2, inf
 
@@ -98,4 +99,6 @@ if __name__ == "__main__":
             del color_dict[node]
 
     DrawGraph(g, color_dict)
+
+
 

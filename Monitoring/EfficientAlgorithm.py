@@ -160,5 +160,34 @@ def eAlgorithm(G, target, k, source_node, verbose=False):
 		alfa += step
 
 	cuts = computeCutset(Gc, S, T)
+
+	# FROM HERE INSERT THE OPTIMIZED ALGORITHM
+
+	# PERFORM VERTEX COVER ON THE REMAINING PART
+
 	monitor_set = chooseMs(cuts, source, target)
 	return monitor_set, len(S)
+
+
+'''
+[11:55] Diodato FERRAIOLI
+Sia C il cut restituito dall'algoritmo
+
+[11:55] Diodato FERRAIOLI
+ora per ogni (u,v) in C tale che v è virtuale e u no insieriamo monitor in u
+
+[11:56] Diodato FERRAIOLI
+per ogni arco (u,v) in C tale che sono entrambi virtuali
+
+[11:56] Diodato FERRAIOLI
+allora insieriamo monitor in tutti i nodi reali x per cui esiste un path virtuale da x a u
+
+[11:57] Diodato FERRAIOLI
+per tutti gli archi rimanenti facciamo VC
+
+[11:59] Diodato FERRAIOLI
+come controllare che esiste un path virtuale? prenderci il sottografo fatto soltanto di archi virtuali
+
+[11:59] Diodato FERRAIOLI
+e per ogni nodo reale in questo sottografo verificare se esiste un path nel sottografo verso u
+'''
