@@ -1,81 +1,90 @@
-from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
+from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, ParallelDatasetGenerationSeed, \
+    SetSameWeightsToOtherGraphs
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
 from Utilities.DrawGraph import DrawGraph
 from Utilities.PrintResultsSeeding import Avg, CreateTable, AddRow
 from Seeding.IC_model import *
 from prettytable import PrettyTable
+from definitions import ROOT_DIR
+import time
 
-###################### TEST PARAMETERS  ######################
-# You can change the following parameters for various purposes
-NUM_RUN = 50
-NUM_ITER = 5  # recommended not to set higher
-SEED_RANGE = 22  # recommended not to set higher
-NUM_NODES = 300
+####################### TEST PARAMETERS  #######################
+# You can change the following parameters for various test cases
+NUM_ITER = 5
+SEED_RANGE = 32
+NUM_RUN = 10
+NUM_CORES = 4
+
+NUM_NODES = 2000
 MIN_EDGES = 100
-NODES_TO_DELETE = 30
+NODES_TO_DELETE = 1000
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
-##############################################################
+################################################################
+
+ParallelDatasetGenerationSeed(NUM_NODES, MIN_EDGES, NODES_TO_DELETE, DISTRIBUTION, HIDING, num_of_graphs=30,
+                             file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic_3/")
 
 
-active_per_run_full = list()
-active_per_run_part = list()
-active_per_run_rec = list()
+'''
+test_file = open("../Results/IC_model/Test_2", "a")
+test_file.write("--- GRAPH PARAMETERS ---" +
+                "\nModel: IC" +
+                "\nNum. of nodes: " + str(NUM_NODES) +
+                "\nNum. of hidden nodes: " + str(NODES_TO_DELETE) +
+                "\nDistribution function: Uniform" +
+                "\nHiding function: Total Node Closure" +
+                "\n\n")
+iter = 0
+start1 = time.time()
+for i in range(20, 25):
 
-mean_full_vote = list()
-mean_part_vote = list()
-mean_rec_vote = list()
-mean_full_basic = list()
-mean_part_basic = list()
-mean_rec_basic = list()
+    test_file.write(str(iter + 1) + ")\n")
+    t = CreateTable()
 
-file_obj = open("../Results/IC_model/Test_1", "a")
-t = CreateTable()
-file_obj.write("--- GRAPH PARAMETERS ---" + "\nNum. of nodes: " + str(NUM_NODES) + "\nMin. num. of edges: " +
-               str(MIN_EDGES) + "\nNum. of nodes to delete: " + str(NODES_TO_DELETE) + "\n")
+    full = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_full_"
+                                     + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
+                                     create_using=nx.DiGraph)
+    part = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_part_"
+                                     + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
+                                     create_using=nx.DiGraph)
+    recv = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_2/" + str(i) + "_recv_"
+                                     + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
+                                     create_using=nx.DiGraph)
 
-for k in range(1, SEED_RANGE, 5):
+    InitGraphParametersIC(full)
+    InitGraphParametersIC(part)
+    InitGraphParametersIC(recv)
+    SetSameWeightsToOtherGraphs(full, [part, recv])
 
-    for _ in range(NUM_ITER):
-        full, part, rec = GenerateRandomGraphTriple(NUM_NODES, MIN_EDGES, NODES_TO_DELETE,
-                                                    distribution_function=DISTRIBUTION, hiding_function=HIDING)
+    for k in range(1, SEED_RANGE, 10):
 
-        InitGraphParametersIC(full)
-        InitGraphParametersIC(part)
-        InitGraphParametersIC(rec)
+        start = time.time()
 
-        for _ in range(NUM_RUN):
-            active_per_run_full.append(len(SIMVoterank(full, k)))
-            active_per_run_part.append(len(SIMVoterank(part, k)))
-            active_per_run_rec.append(len(SIMVoterank(rec, k)))
+        mean_full_vote = ParallelSIMVoterank(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_part_vote = ParallelSIMVoterank(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_recv_vote = ParallelSIMVoterank(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN)
 
-        # PrintResultsSeeding("VOTE RANK", Avg(active_per_run_full), Avg(active_per_run_part), Avg(active_per_run_rec))
+        mean_full_basic = ParallelSIMBasicGreedy(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_part_basic = ParallelSIMBasicGreedy(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN)
 
-        mean_full_vote.append(Avg(active_per_run_full))
-        mean_part_vote.append(Avg(active_per_run_part))
-        mean_rec_vote.append(Avg(active_per_run_rec))
+        end = time.time()
 
-        active_per_run_full.clear()
-        active_per_run_part.clear()
-        active_per_run_rec.clear()
+        print("\nExecution time for iteration " + str(iter + 1) + "-" + str(k) + ": " + str(round((end - start)/60, 2)) + " mins")
 
-        for _ in range(NUM_RUN):
-            active_per_run_full.append(len(SIMBasicGreedy(full, k)))
-            active_per_run_part.append(len(SIMBasicGreedy(part, k)))
-            active_per_run_rec.append(len(SIMBasicGreedy(rec, k)))
+        t = AddRow(t, k,
+                   round(mean_full_vote, 2),
+                   round(mean_part_vote, 2),
+                   round(mean_recv_vote, 2),
+                   round(mean_full_basic, 2),
+                   round(mean_part_basic, 2),
+                   round(mean_recv_basic, 2))
 
-        # PrintResultsSeeding("BASIC GREEDY", Avg(active_per_run_full), Avg(active_per_run_part), Avg(active_per_run_rec))
+    iter += 1
+    test_file.write(str(t) + "\n\n")
 
-        mean_full_basic.append(Avg(active_per_run_full))
-        mean_part_basic.append(Avg(active_per_run_part))
-        mean_rec_basic.append(Avg(active_per_run_rec))
+end1 = time.time()
 
-        active_per_run_full.clear()
-        active_per_run_part.clear()
-        active_per_run_rec.clear()
-
-    t = AddRow(t, k, round(Avg(mean_full_vote), 2), round(Avg(mean_part_vote), 2), round(Avg(mean_rec_vote), 2),
-               round(Avg(mean_full_basic), 2), round(Avg(mean_part_basic), 2), round(Avg(mean_rec_basic), 2))
-
-file_obj.write(str(t) + "\n\n")
+print("Total exec time: " + str(round((end1-start1)/3600, 2)) + " hrs")'''
