@@ -139,3 +139,47 @@ def select_ss_r(G: networkx.DiGraph, ns):
     target = random.choice(list(PLID))
 
     return sources, target
+
+
+def GetVirtualNodesByLabel(part: networkx.DiGraph, recv: networkx.DiGraph):
+    """
+    Returns the set of virtual nodes. Virtual nodes are defined as the nodes that are present in recv graph but not in
+    part graph. A node is present if it has the same label
+    :param part:        The Partial graph
+    :param recv:        The Recovered graph
+    :return:
+    """
+    virtuals = set()
+    for node in recv.nodes():
+        if node not in part.nodes():
+            virtuals.add(node)
+    return virtuals
+
+
+def InterpretCascadeResults(ic_results, graph, source, targets, monitors):
+    """
+    Transforms the Independent Cascade results in more readable metrics
+    :param ic_results:
+    :return:
+    """
+    num_of_infected = 0
+    num_of_non_source_infected = 0
+    num_of_infected_targets = 0
+    num_of_iterations = len(ic_results) - 1 if ic_results[-1] == [] else len(ic_results)
+    num_of_monitors = len(monitors)
+    num_of_nodes = graph.number_of_nodes()
+
+    for iteration in ic_results:
+        for node in iteration:
+            if node not in source:
+                num_of_non_source_infected += 1
+            if node in targets:
+                num_of_infected_targets +=1
+            num_of_infected += 1
+
+    print("Number of Total infected nodes:", num_of_infected, "(", num_of_infected / num_of_nodes * 100, "% of total nodes)")
+    print("Number of Non-Source nodes infected:", num_of_non_source_infected, "(", num_of_non_source_infected / num_of_nodes * 100, "% of total nodes)")
+    print("Number of Infected Targets:", num_of_infected_targets, "(", num_of_infected_targets / num_of_nodes * 100, "% of total nodes)",
+          num_of_infected_targets / len(targets) * 100, "% of total targets)")
+    print("Number of monitors:", num_of_monitors, "(", num_of_monitors / num_of_nodes * 100, "% of total nodes)")
+    print("Independent Cascade ran for", num_of_iterations, "iterations\n")

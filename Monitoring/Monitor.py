@@ -11,14 +11,11 @@ from Utilities.DrawGraph import DrawGraph
 from Utilities.GraphGenerator import RandomConnectedDirectedGraph
 
 
-def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=100, verbose=False):
+def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=100, virtual_set=[], verbose=False):
     if verbose:
         cprint(bcolors.OKGREEN, "Number of Sources =", len(sources))
         cprint(bcolors.OKGREEN, "SOURCES =", sources)
         cprint(bcolors.OKGREEN, "TARGET =", targets)
-
-    # G_source_contracted = contractGraph(graph, sources, new_label="super_source")
-    # G_contracted = contractGraph(G_source_contracted, targets, new_label="super_target")
 
     G_contracted, c_source, c_target = SourceContraction(graph.copy(), sources, targets)
 
@@ -45,13 +42,18 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
     if verbose:
         cprint(bcolors.OKGREEN, "\nAVG " + str(cascade_iterations) + " CASCADE: Number of Infected = [", c_nodes, "]\n")
 
-    m2, inf = eAlgorithm(G_m_test_contracted, c_target, c_nodes, c_source, verbose=verbose)
+    m2, inf = eAlgorithm(G_m_test_contracted, c_target, c_nodes, c_source, virtual_set=virtual_set, verbose=verbose)
 
     if verbose:
         cprint(bcolors.OKGREEN, "\n== MONITOR PLACEMENT REPORT ==\nMonitor set =", m2, "\nNumber of monitors =", len(m2))
         cprint(bcolors.OKGREEN, "Max number of infected nodes =", inf)
 
     return m2, inf
+
+
+def TestMonitorsSynthetic(full, part, recv, monitors, cascade_iterations, virtual_set, verbose=False):
+    if verbose:
+        cprint(bcolors.OKGREEN, "Number of Sources =", len(sources))
 
 
 if __name__ == "__main__":

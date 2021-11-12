@@ -49,9 +49,13 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     part_obs_graph = full_graph.copy()
     nodes_to_hide = distribution_function(part_obs_graph, num_nodes_to_hide)
 
+    if verbose:
+        cprint(bcolors.OKBLUE, "Nodes selected for hiding:", nodes_to_hide)
+
     part_obs_graph = hiding_function(part_obs_graph, nodes_to_hide)
 
-    cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
+    if verbose:
+        cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
 
     # Adaptive Influential Treshold
     if influential_threshold is None:

@@ -3,7 +3,7 @@ import random
 import networkx
 
 
-def SetRandomEdgeWeights(graph: networkx.Graph, attribute="weight", distribution="uniform", force=False, *args):
+def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distribution="uniform", force=False, *args):
     """
      Sets random weights for the input graph
     :param graph:           The graph whose weights have to be randomized
@@ -22,8 +22,15 @@ def SetRandomEdgeWeights(graph: networkx.Graph, attribute="weight", distribution
                             --(alpha, beta)
                             -expovariate
                             --(lambda)
+                            -indegree
+                            --Widely used in Literature for Independent Cascade, sets the weight as the normalized
+                                in-degree value of the node the edge is pointing to
+                            -smalluniform
+                            --Also used in literature, uses a random uniform from 0 to 0.1 instead from 0 to 1
     :return:                A Graph in which the attribute "attribute" is randomized
     """
+
+    max_in_degree = max(graph.in_degree[node] for node in graph.nodes())
 
     for u, v, data in graph.edges(data=True):
         if distribution == "gauss":
@@ -36,6 +43,10 @@ def SetRandomEdgeWeights(graph: networkx.Graph, attribute="weight", distribution
             value = random.expovariate(args[0])
         elif distribution == "lognormal":
             value = random.lognormvariate(args[0], args[1])
+        elif distribution == "indegree":
+            value = graph.in_degree[v] / max_in_degree
+        elif distribution == "smalluniform":
+            value = random.random() * 0.1
         else:
             value = random.uniform(args[0], args[1])
 
