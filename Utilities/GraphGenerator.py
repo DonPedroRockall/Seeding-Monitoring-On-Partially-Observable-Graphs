@@ -30,7 +30,4 @@ def GNCConnectedDirectedGraph(num_nodes):
             if u != v and not graph.has_edge(u, v):
                 graph.add_edge(u, v)
             i += 1
-
-    print("Random graph generated")
-
     return graph

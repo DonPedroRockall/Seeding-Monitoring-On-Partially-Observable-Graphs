@@ -25,7 +25,7 @@ def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distributi
                             -indegree
                             --Widely used in Literature for Independent Cascade, sets the weight as the normalized
                                 in-degree value of the node the edge is pointing to
-                            -smalluniform
+                            -smallrand
                             --Also used in literature, uses a random uniform from 0 to 0.1 instead from 0 to 1
     :return:                A Graph in which the attribute "attribute" is randomized
     """
@@ -45,7 +45,7 @@ def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distributi
             value = random.lognormvariate(args[0], args[1])
         elif distribution == "indegree":
             value = graph.in_degree[v] / max_in_degree
-        elif distribution == "smalluniform":
+        elif distribution == "smallrand":
             value = random.random() * 0.1
         else:
             value = random.uniform(args[0], args[1])

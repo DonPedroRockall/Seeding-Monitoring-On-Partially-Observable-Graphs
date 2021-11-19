@@ -81,9 +81,9 @@ class MonitorTester:
             full, part, recv = GenerateRandomGraphTriple(self.NUM_NODES,
                                                          self.NUM_TO_HIDE,
                                                          GNCConnectedDirectedGraph,
-                                                         UniformDistribution,
-                                                         TotalNodeClosure,
-                                                         None, self.DISTRIBUTION, True)
+                                                         DegreeDistribution if self.DISTRIBUTION == "deg" else UniformDistribution,
+                                                         TotalNodeClosure if self.CLOSURE == "Total Closure" else PartialNodeClosure,
+                                                         None, "deg", True)
 
             # Write the graph to path
             if verbose:
@@ -94,19 +94,19 @@ class MonitorTester:
 
         else:
             # Or read graph triple
-            full, part, recv = ReadGraphTriple(ROOT_DIR + "/Datasets/Synthetic/DegreeDist/", folder=self.FOLDER, index=0, hid=150, dist=self.DISTRIBUTION)
+            full, part, recv = ReadGraphTriple(ROOT_DIR + "/Datasets/Synthetic/DegreeDist/", folder=self.FOLDER, index=0, hid=self.NUM_TO_HIDE, dist=self.DISTRIBUTION)
 
             return self.perform_test(full, part, recv)
 
     def perform_test(self, full, part, recv):
         # Generate the weights for the full graph
         cprint(bcolors.OKGREEN, "Setting weights...")
-        SetRandomEdgeWeights(full, "weight", "indegree", True, *[0, 1])
+        SetRandomEdgeWeights(full, "weight", self.WEIGHT, True, *[0, 1])
         # Copy the weights to the other two graphs
         SetSameWeightsToOtherGraphs(full, [part])
         SetSameWeightsToOtherGraphs(part, [recv])
         # Assign random edges to the newly reconstructed edges
-        SetRandomEdgeWeights(recv, "weight", "indegree", False, *[0, 1])
+        SetRandomEdgeWeights(recv, "weight", self.WEIGHT, False, *[0, 1])
 
         number_of_recovered_nodes = recv.number_of_nodes() - part.number_of_nodes()
         number_of_hidden_nodes = full.number_of_nodes() - part.number_of_nodes()
@@ -154,15 +154,15 @@ class MonitorTester:
         cprint(bcolors.BOLD, "-- General Information --")
         print(len(sources), "sources:", sources)
         print(len(targets), "targets:", targets)
-        print("Hidden Nodes:", len(number_of_hidden_nodes))
-        print("Recovered Nodes:", len(number_of_recovered_nodes))
+        print("Hidden Nodes:", number_of_hidden_nodes)
+        print("Recovered Nodes:", number_of_recovered_nodes, "\n")
 
         cprint(bcolors.BOLD, "-- General Graph Information --")
         print("Full graph:\n", full.number_of_nodes(), "nodes\n", full.number_of_edges(), "edges\n")
         print("Generation Function:", self.GENERATION)
         print("Hiding Function:", self.DISTRIBUTION)
         print("Weight Function:", self.WEIGHT)
-        print("Closure Function:", self.CLOSURE)
+        print("Closure Function:", self.CLOSURE, "\n")
 
         cprint(bcolors.BOLD, "-- Full Monitors on Full Graph --")
         InterpretCascadeResults(ic_full_full, full, sources, targets, monitors_full)
@@ -204,8 +204,12 @@ if __name__ == "__main__":
     mt.NUM_TARGETS = 10
     mt.DISTRIBUTION = "deg"
     mt.FOLDER = "MEDIUM_1500/"
+    mt.GENERATION = "Random Graph"
+    mt.WEIGHT = "smallrand"  # Should set this to "smallrand"
+    mt.CLOSURE = "Total Closure"
+    mt.DISTRIBUTION = "deg"
     # mt.test_1()
-    mt.test_2(generate=False, verbose=True)
+    mt.test_2(generate=True, verbose=True)
 
 
 
