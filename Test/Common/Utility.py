@@ -1,6 +1,35 @@
 import random
+import networkx as nx
 
-import networkx
+
+def GetVirtualNodesByLabel(part: networkx.DiGraph, recv: networkx.DiGraph):
+    """
+    Returns the set of virtual nodes. Virtual nodes are defined as the nodes that are present in recv graph but not in
+    part graph. A node is present if it has the same label
+    :param part:        The Partial graph
+    :param recv:        The Recovered graph
+    :return:
+    """
+    virtuals = set()
+    for node in recv.nodes():
+        if node not in part.nodes():
+            virtuals.add(node)
+    return virtuals
+
+
+def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
+    """
+    Copies all the attributes of original_graph to all the other graphs in other_graphs list, without altering the
+    structure of the graph(s) itself. (I.E.: it will not create new nodes or new edges, every graph will stay the same)
+    :param original_graph:
+    :param other_graphs:
+    :return:
+    """
+    for u, v, data in original_graph.edges(data=True):
+        for graph in other_graphs:
+            if graph.has_edge(u, v):
+                for key in data:
+                    graph[u][v][key] = data[key]
 
 
 def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distribution="uniform", force=False, *args):
@@ -54,3 +83,4 @@ def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distributi
         if not force and attribute in data:
             continue
         data[attribute] = value
+

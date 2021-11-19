@@ -141,21 +141,6 @@ def select_ss_r(G: networkx.DiGraph, ns):
     return sources, target
 
 
-def GetVirtualNodesByLabel(part: networkx.DiGraph, recv: networkx.DiGraph):
-    """
-    Returns the set of virtual nodes. Virtual nodes are defined as the nodes that are present in recv graph but not in
-    part graph. A node is present if it has the same label
-    :param part:        The Partial graph
-    :param recv:        The Recovered graph
-    :return:
-    """
-    virtuals = set()
-    for node in recv.nodes():
-        if node not in part.nodes():
-            virtuals.add(node)
-    return virtuals
-
-
 def InterpretCascadeResults(ic_results, graph, source, targets, monitors):
     """
     Transforms the Independent Cascade results in more readable metrics

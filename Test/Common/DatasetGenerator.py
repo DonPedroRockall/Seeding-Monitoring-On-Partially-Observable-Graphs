@@ -1,5 +1,3 @@
-import os.path
-
 import networkx as nx
 
 from joblib import Parallel, delayed
@@ -7,7 +5,7 @@ from joblib import Parallel, delayed
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
 from Utilities.ColorPrints import *
-from Utilities.GraphGenerator import RandomConnectedDirectedGraph, GNCConnectedDirectedGraph
+from Test.Common.GraphGenerator import GNCConnectedDirectedGraph
 from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
 from definitions import ROOT_DIR as ROOT
 
@@ -72,21 +70,6 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 
     # Return the triple
     return full_graph, part_obs_graph, reconstructed_graph
-
-
-def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
-    """
-    Copies all the attributes of original_graph to all the other graphs in other_graphs list, without altering the
-    structure of the graph(s) itself. (I.E.: it will not create new nodes or new edges, every graph will stay the same)
-    :param original_graph:
-    :param other_graphs:
-    :return:
-    """
-    for u, v, data in original_graph.edges(data=True):
-        for graph in other_graphs:
-            if graph.has_edge(u, v):
-                for key in data:
-                    graph[u][v][key] = data[key]
 
 
 def ParallelDatasetGeneration(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr,

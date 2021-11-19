@@ -6,13 +6,13 @@ import numpy
 import random
 from Utilities.PrintResultsSeeding import Avg
 
-# for the IC model, we only need the edge weights (assigned randomly in the range [0, 1]);
+# for the IC model, we only need the edge weights (assigned randomly in the range [0, 0.1]);
 # in the following, the adjectives 'influenced' and 'activated' are used interchangeably
 
 
 def InitGraphParametersIC(G: nx.DiGraph):
     for u, v, data in G.edges(data=True):
-        data['weight'] = random.uniform(0, 1)
+        data['weight'] = random.uniform(0, 0.1)  # as seen in the literature
 
 
 def RunIC(G: nx.DiGraph, seeds: list):

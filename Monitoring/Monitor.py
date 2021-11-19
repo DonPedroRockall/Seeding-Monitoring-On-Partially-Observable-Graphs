@@ -5,10 +5,10 @@ import networkx
 from Monitoring.DiffusionModels import independent_cascade
 from Monitoring.EfficientAlgorithm import eAlgorithm
 from Monitoring.MinimumMonitorSetConstruction import MMSC, N_delta
-from Monitoring.MonitorUtility import contractGraph, SourceContraction
+from Monitoring.MonitorUtility import SourceContraction
 from Utilities.ColorPrints import *
 from Utilities.DrawGraph import DrawGraph
-from Utilities.GraphGenerator import RandomConnectedDirectedGraph
+from Test.Common.GraphGenerator import RandomConnectedDirectedGraph
 
 
 def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=100, virtual_set=[], verbose=False):
