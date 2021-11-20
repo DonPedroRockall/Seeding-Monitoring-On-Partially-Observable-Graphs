@@ -1,3 +1,7 @@
+import random
+
+import networkx
+
 from Monitoring.DiffusionModels import independent_cascade
 from Monitoring.Monitor import PlaceMonitors
 from Monitoring.MonitorUtility import InterpretCascadeResults
@@ -90,34 +94,68 @@ class MonitorTester:
 
             return self.perform_test(full, part, recv)
 
+    def test_real_dataset(self, path, directed, generate):
+        full = networkx.read_edgelist(path, create_using=networkx.DiGraph if directed else networkx.Graph)
+
+        if not generate:
+            part = networkx.read_edgelist(path[:-4] + "-PART.txt", create_using=networkx.DiGraph if directed else networkx.Graph)
+            recv = networkx.read_edgelist(path[:-4] + "-RECV.txt", create_using=networkx.DiGraph if directed else networkx.Graph)
+            self.perform_test(full, part, recv)
+            return
+
+        hiding_distr = UniformDistribution
+        if self.DISTRIBUTION == "deg":
+            hiding_distr = DegreeDistribution
+
+        closure_func = TotalNodeClosure
+        if self.CLOSURE == "Partial Closure":
+            closure_func = PartialNodeClosure
+
+        nth = hiding_distr(full, self.NUM_TO_HIDE)
+        # Hide a part of the nodes
+        part = closure_func(full, nth)
+
+        # Set influential treshold
+        influential_threshold = sum(deg for node, deg in part.degree() if deg > 0) / float(part.number_of_nodes())
+
+        # Reconstruct the graph
+        recv, nodes_recovered = InfluentialNodeRecovery(
+            part.copy(), self.NUM_TO_HIDE, N0=2, alpha=None, beta=None,
+            epsilon=influential_threshold, centrality="deg")
+
+        networkx.write_edgelist(part, ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote-PART.txt", data=False)
+        networkx.write_edgelist(recv, ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote-RECV.txt", data=False)
+
+        self.perform_test(full, part, recv)
+
     def perform_test(self, full, part, recv):
+
         # Generate the weights for the full graph
         cprint(bcolors.OKGREEN, "Setting weights...")
-        SetRandomEdgeWeights(full, "weight", self.WEIGHT, True, *[0, 1])
+        # SetRandomEdgeWeights(full, "weight", self.WEIGHT, True, *[0, 1])
+        SetRandomEdgeWeightsByDistribution(full, lambda: random.random() * 0.1, attribute="weight", force=True)
         # Copy the weights to the other two graphs
-        SetSameWeightsToOtherGraphs(full, [part])
-        SetSameWeightsToOtherGraphs(part, [recv])
+        SetSameWeightsToOtherGraphs(full, [part, recv])
         # Assign random edges to the newly reconstructed edges
-        SetRandomEdgeWeights(recv, "weight", self.WEIGHT, False, *[0, 1])
+        # SetRandomEdgeWeights(recv, "weight", self.WEIGHT, False, *[0, 1])
+        SetRandomEdgeWeightsByDistribution(recv, lambda: random.random() * 0.1, attribute="weight", force=False)
 
         number_of_recovered_nodes = recv.number_of_nodes() - part.number_of_nodes()
         number_of_hidden_nodes = full.number_of_nodes() - part.number_of_nodes()
 
         # Choose sources and targets (they have to be in all 3 graphs)
-        cprint(bcolors.OKGREEN, "Choosing sources...")
-        sources = list()
-        targets = list()
-
-        while len(sources) < self.NUM_SOURCES:
-            node = random.choice(list(part.nodes()))
-            if node not in sources and node in full.nodes() and node in recv.nodes():
-                sources.append(node)
-
         cprint(bcolors.OKGREEN, "Choosing targets...")
-        while len(targets) < self.NUM_TARGETS:
-            node = random.choice(list(part.nodes()))
-            if node not in sources and node not in targets and node in full.nodes() and node in recv.nodes():
-                targets.append(node)
+        valid_nodes = set(part.nodes())
+        print(len(valid_nodes))
+
+        if len(valid_nodes) < self.NUM_SOURCES + self.NUM_TARGETS:
+            raise ValueError("Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
+                             "select {0} sources and {1} targets".format(self.NUM_SOURCES, self.NUM_TARGETS))
+
+        sources = list(random.sample(valid_nodes, self.NUM_SOURCES))
+        valid_nodes.difference(set(sources))
+        targets = list(random.sample(valid_nodes, self.NUM_TARGETS))
+        cprint(bcolors.OKGREEN, "Set sources and targets. Computing the virtual nodes set...")
 
         # Compute the set of virtual nodes
         virtual_set = GetVirtualNodesByLabel(part, recv)
@@ -191,17 +229,18 @@ if __name__ == "__main__":
 
     mt = MonitorTester()
     mt.NUM_NODES = 1500
-    mt.NUM_TO_HIDE = 300
+    mt.NUM_TO_HIDE = 200
     mt.NUM_SOURCES = 10
     mt.NUM_TARGETS = 10
     mt.DISTRIBUTION = "deg"
     mt.FOLDER = "MEDIUM_1500/"
     mt.GENERATION = "Random Graph"
-    mt.WEIGHT = "smallrand"  # Should set this to "smallrand"
+    mt.WEIGHT = "smallrand"
     mt.CLOSURE = "Total Closure"
     mt.DISTRIBUTION = "deg"
     # mt.test_1()
-    mt.test_2(generate=True, verbose=True)
+    # mt.test_2(generate=True, verbose=True)
+    mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=False)
 
 
 

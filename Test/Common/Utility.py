@@ -2,7 +2,7 @@ import random
 import networkx as nx
 
 
-def GetVirtualNodesByLabel(part: networkx.DiGraph, recv: networkx.DiGraph):
+def GetVirtualNodesByLabel(part: nx.DiGraph, recv: nx.DiGraph):
     """
     Returns the set of virtual nodes. Virtual nodes are defined as the nodes that are present in recv graph but not in
     part graph. A node is present if it has the same label
@@ -32,7 +32,7 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
                     graph[u][v][key] = data[key]
 
 
-def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distribution="uniform", force=False, *args):
+def SetRandomEdgeWeights(graph: nx.DiGraph, attribute="weight", distribution="uniform", force=False, *args):
     """
      Sets random weights for the input graph
     :param graph:           The graph whose weights have to be randomized
@@ -59,28 +59,62 @@ def SetRandomEdgeWeights(graph: networkx.DiGraph, attribute="weight", distributi
     :return:                A Graph in which the attribute "attribute" is randomized
     """
 
-    max_in_degree = max(graph.in_degree[node] for node in graph.nodes())
+    if distribution == "gauss":
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = random.gauss(args[0], args[1])
+
+    elif distribution == "betavariate":
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = random.betavariate(args[0], args[1])
+
+    elif distribution == "gammavariate":
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = random.gammavariate(args[0], args[1])
+
+    elif distribution == "expovariate":
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = random.expovariate(args[0])
+
+    elif distribution == "lognormal":
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = random.lognormvariate(args[0], args[1])
+
+    elif distribution == "indegree":
+        max_in_degree = max(graph.in_degree[node] for node in graph.nodes())
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = graph.in_degree[v] / max_in_degree
+
+    elif distribution == "smallrand":
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = float(random.random() * 0.1)
+
+    else:
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute not in data:
+                data[attribute] = random.uniform(args[0], args[1])
+
+
+def SetRandomEdgeWeightsByDistribution(graph: nx.DiGraph, distribution, attribute="weight", force=False):
+    """
+     Sets random weights for the input graph
+    :param graph:           The graph whose weights have to be randomized
+    :param attribute        The weight attribute. Can be any string
+    :param distribution     The distribution to use to sample random values
+                            A function or a lambda can be passed as argument
+    :param force            If True, then all edge weights are assigned, otherwise, only the edges that do not have the
+                            attribute set will have their weights set
+
+    :return:                A Graph in which the attribute "attribute" is randomized
+    """
 
     for u, v, data in graph.edges(data=True):
-        if distribution == "gauss":
-            value = random.gauss(args[0], args[1])
-        elif distribution == "betavariate":
-            value = random.betavariate(args[0], args[1])
-        elif distribution == "gammavariate":
-            value = random.gammavariate(args[0], args[1])
-        elif distribution == "expovariate":
-            value = random.expovariate(args[0])
-        elif distribution == "lognormal":
-            value = random.lognormvariate(args[0], args[1])
-        elif distribution == "indegree":
-            value = graph.in_degree[v] / max_in_degree
-        elif distribution == "smallrand":
-            value = random.random() * 0.1
-        else:
-            value = random.uniform(args[0], args[1])
-
-        # Only assign a new weight if either the function has to force (=overwrite) weights or the edge does not have a weight
         if not force and attribute in data:
             continue
-        data[attribute] = value
-
+        data[attribute] = distribution()
