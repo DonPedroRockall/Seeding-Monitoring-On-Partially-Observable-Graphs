@@ -6,7 +6,7 @@ from Monitoring.DiffusionModels import independent_cascade
 from Monitoring.Monitor import PlaceMonitors
 from Monitoring.MonitorUtility import InterpretCascadeResults
 from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
-from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
+from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, CheckPartRecv
 from Test.Common.DatasetReader import WriteGraphTriple, ReadGraphTriple
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
@@ -134,6 +134,9 @@ class MonitorTester:
         cprint(bcolors.OKGREEN, "Setting weights...")
         # SetRandomEdgeWeights(full, "weight", self.WEIGHT, True, *[0, 1])
         SetRandomEdgeWeightsByDistribution(full, lambda: random.random() * 0.1, attribute="weight", force=True)
+
+        CheckPartRecv(part, recv)
+
         # Copy the weights to the other two graphs
         SetSameWeightsToOtherGraphs(full, [part, recv])
         # Assign random edges to the newly reconstructed edges
@@ -146,14 +149,14 @@ class MonitorTester:
         # Choose sources and targets (they have to be in all 3 graphs)
         cprint(bcolors.OKGREEN, "Choosing targets...")
         valid_nodes = set(part.nodes())
-        print(len(valid_nodes))
 
         if len(valid_nodes) < self.NUM_SOURCES + self.NUM_TARGETS:
             raise ValueError("Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
                              "select {0} sources and {1} targets".format(self.NUM_SOURCES, self.NUM_TARGETS))
 
         sources = list(random.sample(valid_nodes, self.NUM_SOURCES))
-        valid_nodes.difference(set(sources))
+        for src in sources:
+            valid_nodes.remove(src)
         targets = list(random.sample(valid_nodes, self.NUM_TARGETS))
         cprint(bcolors.OKGREEN, "Set sources and targets. Computing the virtual nodes set...")
 
@@ -228,8 +231,8 @@ if __name__ == "__main__":
     # monitors_list = Parallel(n_jobs=1)(delayed(run_test)(i, True) for i in range(1))
 
     mt = MonitorTester()
-    mt.NUM_NODES = 1500
-    mt.NUM_TO_HIDE = 200
+    mt.NUM_NODES = 1000
+    mt.NUM_TO_HIDE = 300
     mt.NUM_SOURCES = 10
     mt.NUM_TARGETS = 10
     mt.DISTRIBUTION = "deg"
@@ -239,8 +242,8 @@ if __name__ == "__main__":
     mt.CLOSURE = "Total Closure"
     mt.DISTRIBUTION = "deg"
     # mt.test_1()
-    # mt.test_2(generate=True, verbose=True)
-    mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=False)
+    mt.test_2(generate=True, verbose=True)
+    # mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=True)
 
 
 

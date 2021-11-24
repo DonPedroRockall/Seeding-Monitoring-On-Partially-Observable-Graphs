@@ -1,3 +1,6 @@
+import copy
+
+import networkx
 import networkx as nx
 
 from joblib import Parallel, delayed
@@ -8,6 +11,24 @@ from Utilities.ColorPrints import *
 from Test.Common.GraphGenerator import GNCConnectedDirectedGraph
 from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
 from definitions import ROOT_DIR as ROOT
+
+
+def CheckPartFull(full: networkx.DiGraph, part: networkx.DiGraph):
+    cnt = 0
+    for node in part.nodes():
+        if node not in full.nodes():
+            cprint(bcolors.FAIL, node)
+            cnt += 1
+    cprint(bcolors.FAIL, "TOTAL FAILED NODES", cnt)
+
+
+def CheckPartRecv(part: networkx.DiGraph, recv: networkx.DiGraph):
+    cnt = 0
+    for node in part.nodes():
+        if node not in recv.nodes():
+            cprint(bcolors.FAIL, node)
+            cnt += 1
+    cprint(bcolors.FAIL, "TOTAL FAILED NODES", cnt)
 
 
 def GenerateRandomGraphTriple(number_of_nodes: int,
@@ -52,16 +73,15 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 
     part_obs_graph = hiding_function(part_obs_graph, nodes_to_hide)
 
-    if verbose:
-        cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
-
     # Adaptive Influential Treshold
     if influential_threshold is None:
         influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(part_obs_graph.number_of_nodes())
+        if verbose:
+            cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
 
     # Reconstruct the graph
     reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(
-        part_obs_graph.copy(), num_nodes_to_hide, N0=2, alpha=None, beta=None,
+        copy.copy(part_obs_graph.copy()), num_nodes_to_hide, N0=2, alpha=None, beta=None,
         epsilon=influential_threshold, centrality=influential_centrality)
 
     # Print out useful information that is not used in the process (nor returned by this function)
