@@ -118,3 +118,49 @@ def SetRandomEdgeWeightsByDistribution(graph: nx.DiGraph, distribution, attribut
         if not force and attribute in data:
             continue
         data[attribute] = distribution()
+
+
+def IsReconstruction(part: nx.DiGraph, recv: nx.DiGraph, hidden_nodes: list):
+
+    for node in part.nodes():
+
+        if node not in recv.nodes():
+            return False
+
+        for neigh in part[node]:
+            if neigh not in hidden_nodes and not recv.has_edge(node, neigh):
+                return False
+    return True
+
+
+def GetReconstruction(part: nx.DiGraph, recv: nx.DiGraph):
+    """
+    This functions scans the recv graph for any node or edge that should be in recv but it isn't.
+    By construction, recv nodes is a super-set of part-nodes. If this isn't true, the function returns the nodes that
+    are in part but not in recv.
+    Moreover, for any edge (u, v) in part edges, it scans the same edge in recv and if it is not returned, then this
+    function returns a dictionary containing node -> neighbor not present in recv
+    Returns the non-reconstructed part of recv. That means, that this function
+    :param part:
+    :param recv:
+    :param hidden_nodes:
+    :return:
+    """
+    nodes_not_present = []
+    invalid_neighbors = {}
+
+    for node in part.nodes():
+
+        if node not in recv.nodes():
+            nodes_not_present.append(node)
+            invalid_neighbors[node] = list(part[node])
+            continue
+
+        for neigh in part[node]:
+            if not recv.has_edge(node, neigh):
+                if node in invalid_neighbors:
+                    invalid_neighbors[node].append(neigh)
+                else:
+                    invalid_neighbors[node] = [neigh]
+
+    return nodes_not_present, invalid_neighbors
