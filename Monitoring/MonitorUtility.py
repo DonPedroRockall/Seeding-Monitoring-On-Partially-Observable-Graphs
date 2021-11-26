@@ -144,6 +144,10 @@ def select_ss_r(G: networkx.DiGraph, ns):
 def InterpretCascadeResults(ic_results, graph, source, targets, monitors):
     """
     Transforms the Independent Cascade results in more readable metrics
+    :param monitors:
+    :param targets:
+    :param source:
+    :param graph:
     :param ic_results:
     :return:
     """

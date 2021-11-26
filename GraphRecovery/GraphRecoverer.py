@@ -21,19 +21,19 @@ def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=Non
         graph = graph.to_directed()
         graph_was_directed = False
 
-    # Remap node labels to be integers
-    observable_graph: DiGraph = networkx.relabel.convert_node_labels_to_integers(graph)
+    # # Remap node labels to be integers
+    # observable_graph: DiGraph = networkx.relabel.convert_node_labels_to_integers(graph)
     # Count the number of observable nodes
-    N = observable_graph.number_of_nodes()
-    # Transforms the (partially observable) graph into adjacency matrix
-    A = networkx.convert_matrix.to_numpy_matrix(observable_graph, weight="DUMMY")
+    N = graph.number_of_nodes()
     # Store the ordering into a list that has to be used later for label consistency
-    node_ordering = list(observable_graph.nodes())
+    node_ordering = list(graph.nodes())
     # Performs Graph recovery to recover the graph
-    Ar = GraphRecv(observable_graph, N0, M)
-
+    Ar = GraphRecv(graph, node_ordering, N0, M)
     # Performs node selection to remove non-influential nodes
     H, r = NodeSelect(Ar, N, M, alpha, beta, epsilon, centrality=centrality)
+    # Expand the node_ordering list to include the new nodes
+    for i in range(H):
+        node_ordering.append(f"RECV{i}")
     # Estimates the new graph by connecting the nodes
     estimated_graph = ConnectNodes(graph, node_ordering, Ar, r)
 
@@ -92,7 +92,7 @@ def NodeSelect(Ar: numpy.ndarray, N, M, alpha=None, beta=None, epsilon=0, centra
     :param beta:        Parameter used for Katz centrality, set as None for default
     :param epsilon:     Minimum value of Katz centrality that a node has to have to be considered influential
     :param centrality:  The centrality measure to use. Valid values: "deg" and "katz"
-    :return H:          Maximum number of influential nodes to be selected
+    :return H:          Number of influential nodes that have been recovered
     :return r:          Ranking vector node -> centrality (ordered on keys)
     """
 
@@ -158,18 +158,41 @@ def ConnectNodes(graph: networkx.DiGraph, ordering, Ar: numpy.ndarray, r):
         if column not in r.keys():
             Ar = numpy.delete(Ar, column, axis=1)
             Ar = numpy.delete(Ar, column, axis=0)
-    recovered_graph = networkx.convert_matrix.from_numpy_matrix(Ar, create_using=networkx.DiGraph)
+    # recovered_graph = networkx.convert_matrix.from_numpy_matrix(Ar, create_using=networkx.DiGraph)
+    recovered_graph = GetGraphFromOrderedMatrix(Ar, ordering)
     return recovered_graph
 
 
-def GetGraphFromOrderedMatrix(A, ordering):
+def GetGraphFromOrderedMatrix(A: numpy.array, ordering):
     """
     Performs the conversion between a numpy matrix representing a DiGraph adjacency matrix to a graph.
-    This operation has to be performed manually because of label consistency
+    This operation has to be performed manually because of label consistency.
+    The code below is extracted directly from networkx and modified as required.
     :param A:
     :param ordering:
     :return:
     """
+    G: networkx.DiGraph = nx.empty_graph(0, create_using=networkx.DiGraph)
+    if A.ndim != 2:
+        raise nx.NetworkXError(f"Input array must be 2D, not {A.ndim}")
+    n, m = A.shape
+    if n != m:
+        raise nx.NetworkXError(f"Adjacency matrix not square: nx,ny={A.shape}")
+    if len(ordering) != n:
+        raise AttributeError("The dimension of the matrix (N x N) has to be the same as the length of the ordering "
+                             "list (N)")
+
+    mapping = {}
+    for i in range(n):
+        mapping[i] = ordering[i]
+
+    # Make sure we get even the isolated nodes of the graph.
+    G.add_nodes_from(ordering)
+    # Get a list of all the entries in the array with nonzero entries. These
+    # coordinates become edges in the graph. (convert to int from np.int64)
+    edges = ((mapping[e[0]], mapping[e[1]]) for e in zip(*A.nonzero()))
+    G.add_edges_from(edges)
+    return G
 
 
 def Bernoulli(float_value):

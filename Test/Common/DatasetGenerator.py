@@ -9,47 +9,8 @@ from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
 from Utilities.ColorPrints import *
 from Test.Common.GraphGenerator import GNCConnectedDirectedGraph
-from GraphRecovery.GraphRecovery import InfluentialNodeRecovery
+from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
 from definitions import ROOT_DIR as ROOT
-
-
-# TODO: Remove this function
-def CheckPartFull(full: networkx.DiGraph, part: networkx.DiGraph):
-
-    if not networkx.is_strongly_connected(full):
-        cprint(bcolors.FAIL, "FULL is not strongly connected")
-        if not networkx.is_weakly_connected(full):
-            cprint(bcolors.FAIL, "FULL is not weakly connected")
-        else:
-            cprint(bcolors.FAIL, "FULL is not weakly connected")
-    else:
-        cprint(bcolors.FAIL, "FULL is strongly connected")
-
-    if not networkx.is_strongly_connected(part):
-        cprint(bcolors.FAIL, "PART is not strongly connected")
-        if not networkx.is_weakly_connected(part):
-            cprint(bcolors.FAIL, "PART is not weakly connected")
-        else:
-            cprint(bcolors.FAIL, "PART is not weakly connected")
-    else:
-        cprint(bcolors.FAIL, "PART is strongly connected")
-
-    cnt = 0
-    for node in part.nodes():
-        if node not in full.nodes():
-            cprint(bcolors.FAIL, node)
-            cnt += 1
-    cprint(bcolors.FAIL, "[PART] TOTAL FAILED NODES", cnt)
-
-
-# TODO: remove this function
-def CheckPartRecv(part: networkx.DiGraph, recv: networkx.DiGraph):
-    cnt = 0
-    for node in part.nodes():
-        if node not in recv.nodes():
-            cprint(bcolors.FAIL, node)
-            cnt += 1
-    cprint(bcolors.FAIL, "[RECV] TOTAL FAILED NODES", cnt)
 
 
 def GenerateRandomGraphTriple(number_of_nodes: int,
@@ -99,8 +60,6 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
         influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(part_obs_graph.number_of_nodes())
         if verbose:
             cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
-
-    CheckPartFull(full_graph, part_obs_graph)
 
     # Reconstruct the graph
     reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(

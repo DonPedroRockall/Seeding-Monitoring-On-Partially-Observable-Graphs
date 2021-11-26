@@ -1,13 +1,8 @@
-import random
-
-import networkx
-from joblib import Parallel, delayed
-
 from Monitoring.DiffusionModels import independent_cascade
 from Monitoring.Monitor import PlaceMonitors
 from Monitoring.MonitorUtility import InterpretCascadeResults
-from GraphRecovery.GraphRecovery import InfluentialNodeRecovery
-from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, CheckPartRecv
+from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
+from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
 from Test.Common.DatasetReader import WriteGraphTriple, ReadGraphTriple
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
@@ -223,45 +218,18 @@ class MonitorTester:
         return monitors_full, monitors_part, monitors_recv
 
 
-@DeprecationWarning
-def parallel_test():
+if __name__ == "__main__":
     mt = MonitorTester()
-    mt.NUM_NODES = 300
-    mt.NUM_TO_HIDE = 30
+    mt.NUM_NODES = 7000
+    mt.NUM_TO_HIDE = 300
     mt.NUM_SOURCES = 10
     mt.NUM_TARGETS = 10
     mt.DISTRIBUTION = "deg"
     mt.FOLDER = "MEDIUM_1500/"
     mt.GENERATION = "Random Graph"
-    mt.WEIGHT = "smallrand"
+    mt.WEIGHT = "indegree"
     mt.CLOSURE = "Total Closure"
     mt.DISTRIBUTION = "deg"
     # mt.test_1()
-    mt.test_2(generate=True, verbose=True)
-    # mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=True)
-
-
-if __name__ == "__main__":
-
-    # ParallelDatasetGeneration(num_nodes=NUM_NODES,
-    #                           num_to_hide=NUM_TO_HIDE,
-    #                           gen_func=GNCConnectedDirectedGraph,
-    #                           distr_func=DegreeDistribution,
-    #                           hiding_func=TotalNodeClosure,
-    #                           inf_thresh=None,
-    #                           inf_centr="deg",
-    #                           num_cores=1,
-    #                           num_of_graphs=1,
-    #                           file_path=ROOT_DIR + "/Datasets/Synthetic/DegreeDist/Big_10k/")
-
-    # monitors_list = Parallel(n_jobs=1)(delayed(run_test)(i, True) for i in range(1))
-
-    Parallel(n_jobs=1)(delayed(parallel_test)() for i in range(1))
-
-
-
-
-
-
-
-
+    # mt.test_2(generate=True, verbose=True)
+    mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=True)
