@@ -26,14 +26,16 @@ def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=Non
     # Count the number of observable nodes
     N = observable_graph.number_of_nodes()
     # Transforms the (partially observable) graph into adjacency matrix
-    A = networkx.convert_matrix.to_numpy_matrix(observable_graph)
+    A = networkx.convert_matrix.to_numpy_matrix(observable_graph, weight="DUMMY")
+    # Store the ordering into a list that has to be used later for label consistency
+    node_ordering = list(observable_graph.nodes())
     # Performs Graph recovery to recover the graph
-    Ar = GraphRecv(A, N0, M)
+    Ar = GraphRecv(observable_graph, N0, M)
 
     # Performs node selection to remove non-influential nodes
     H, r = NodeSelect(Ar, N, M, alpha, beta, epsilon, centrality=centrality)
     # Estimates the new graph by connecting the nodes
-    estimated_graph = ConnectNodes(graph, Ar, r)
+    estimated_graph = ConnectNodes(graph, node_ordering, Ar, r)
 
     # If necessary, transform back the graph to undirected
     if not graph_was_directed:
@@ -42,36 +44,20 @@ def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=Non
     return estimated_graph, H
 
 
-def ConnectNodes(graph: networkx.DiGraph, Ar: numpy.ndarray, r):
-    """
-    Connects Recovered nodes to the Original observable graph by using the recovered adjacency matrix Ar
-    :param graph:   The original observable graph
-    :param Ar:      The Adjacency Matrix of the recovered graph
-    :param r:       Ranking vector of the recovered influential nodes
-    :return:        A Graph with the recovered nodes connected to it
-    """
-    N = graph.number_of_nodes()
-    for column in range(len(Ar[0]) - 1, N - 1, -1):
-        if column not in r.keys():
-            Ar = numpy.delete(Ar, column, axis=1)
-            Ar = numpy.delete(Ar, column, axis=0)
-    recovered_graph = networkx.convert_matrix.from_numpy_matrix(Ar, create_using=networkx.DiGraph)
-    return recovered_graph
-
-
-def GraphRecv(A, N0, M):
+def GraphRecv(graph: networkx.DiGraph, ordering, N0, M):
     """
     Performs the Graph Recovery function by the means of KronFit algorithm.
     source: https://deepai.org/publication/community-detection-in-partially-observable-social-networks
 
-    :param A:               Adjacency matrix of the observable graph
+    :param graph:           Observable graph (Must be a DiGraph)
+    :param ordering:        Ordering of the nodes. Important step for label consistency
     :param N0:              Number of Initiator Matrix Nodes (Initiator Matrix will be N0xN0)
     :param M:               Number of missing nodes
     :return:                The Adjacency Matrix of the Full Recovered Graph
     """
 
     # Get the graph and the number of nodes from the adjacency matrix
-    graph: networkx.DiGraph = networkx.from_numpy_matrix(A, create_using=networkx.DiGraph)
+    A = networkx.convert_matrix.to_numpy_matrix(graph, nodelist=ordering)
     N = graph.number_of_nodes()
 
     # Compute the necessary power of the kronecker product K
@@ -159,7 +145,39 @@ def NodeSelect(Ar: numpy.ndarray, N, M, alpha=None, beta=None, epsilon=0, centra
     return H, ranking
 
 
+def ConnectNodes(graph: networkx.DiGraph, ordering, Ar: numpy.ndarray, r):
+    """
+    Connects Recovered nodes to the Original observable graph by using the recovered adjacency matrix Ar
+    :param graph:   The original observable graph
+    :param Ar:      The Adjacency Matrix of the recovered graph
+    :param r:       Ranking vector of the recovered influential nodes
+    :return:        A Graph with the recovered nodes connected to it
+    """
+    N = graph.number_of_nodes()
+    for column in range(len(Ar[0]) - 1, N - 1, -1):
+        if column not in r.keys():
+            Ar = numpy.delete(Ar, column, axis=1)
+            Ar = numpy.delete(Ar, column, axis=0)
+    recovered_graph = networkx.convert_matrix.from_numpy_matrix(Ar, create_using=networkx.DiGraph)
+    return recovered_graph
+
+
+def GetGraphFromOrderedMatrix(A, ordering):
+    """
+    Performs the conversion between a numpy matrix representing a DiGraph adjacency matrix to a graph.
+    This operation has to be performed manually because of label consistency
+    :param A:
+    :param ordering:
+    :return:
+    """
+
+
 def Bernoulli(float_value):
+    """
+    Performs a Bernoulli realization given a float value between 0 and 1.
+    :param float_value:     Probability of getting a success (1)
+    :return:                A success (1) or a failure (0)
+    """
     return 1 if random.random() < float_value else 0
 
 

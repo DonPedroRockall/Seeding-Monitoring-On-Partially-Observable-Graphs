@@ -1,11 +1,12 @@
 import random
 
 import networkx
+from joblib import Parallel, delayed
 
 from Monitoring.DiffusionModels import independent_cascade
 from Monitoring.Monitor import PlaceMonitors
 from Monitoring.MonitorUtility import InterpretCascadeResults
-from OverlappingCommunityDetection.CommunityDetector import InfluentialNodeRecovery
+from GraphRecovery.GraphRecovery import InfluentialNodeRecovery
 from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, CheckPartRecv
 from Test.Common.DatasetReader import WriteGraphTriple, ReadGraphTriple
 from Test.Common.DistributionFunctions import *
@@ -81,6 +82,10 @@ class MonitorTester:
                                                          TotalNodeClosure if self.CLOSURE == "Total Closure" else PartialNodeClosure,
                                                          None, "deg", True)
 
+            nodes, neighbors = GetReconstruction(part, recv)
+            print("NODES", nodes)
+            print("NEIGHBORS", neighbors)
+
             # Write the graph to path
             if verbose:
                 cprint(bcolors.OKGREEN, "Writing generated graph to file")
@@ -132,10 +137,11 @@ class MonitorTester:
 
         # Generate the weights for the full graph
         cprint(bcolors.OKGREEN, "Setting weights...")
+
         # SetRandomEdgeWeights(full, "weight", self.WEIGHT, True, *[0, 1])
         SetRandomEdgeWeightsByDistribution(full, lambda: random.random() * 0.1, attribute="weight", force=True)
 
-        CheckPartRecv(part, recv)
+
 
         # Copy the weights to the other two graphs
         SetSameWeightsToOtherGraphs(full, [part, recv])
@@ -145,6 +151,8 @@ class MonitorTester:
 
         number_of_recovered_nodes = recv.number_of_nodes() - part.number_of_nodes()
         number_of_hidden_nodes = full.number_of_nodes() - part.number_of_nodes()
+
+        print("NUMBER OF RECOVERED NODES:", number_of_recovered_nodes)
 
         # Choose sources and targets (they have to be in all 3 graphs)
         cprint(bcolors.OKGREEN, "Choosing targets...")
@@ -215,6 +223,24 @@ class MonitorTester:
         return monitors_full, monitors_part, monitors_recv
 
 
+@DeprecationWarning
+def parallel_test():
+    mt = MonitorTester()
+    mt.NUM_NODES = 300
+    mt.NUM_TO_HIDE = 30
+    mt.NUM_SOURCES = 10
+    mt.NUM_TARGETS = 10
+    mt.DISTRIBUTION = "deg"
+    mt.FOLDER = "MEDIUM_1500/"
+    mt.GENERATION = "Random Graph"
+    mt.WEIGHT = "smallrand"
+    mt.CLOSURE = "Total Closure"
+    mt.DISTRIBUTION = "deg"
+    # mt.test_1()
+    mt.test_2(generate=True, verbose=True)
+    # mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=True)
+
+
 if __name__ == "__main__":
 
     # ParallelDatasetGeneration(num_nodes=NUM_NODES,
@@ -230,20 +256,9 @@ if __name__ == "__main__":
 
     # monitors_list = Parallel(n_jobs=1)(delayed(run_test)(i, True) for i in range(1))
 
-    mt = MonitorTester()
-    mt.NUM_NODES = 1000
-    mt.NUM_TO_HIDE = 300
-    mt.NUM_SOURCES = 10
-    mt.NUM_TARGETS = 10
-    mt.DISTRIBUTION = "deg"
-    mt.FOLDER = "MEDIUM_1500/"
-    mt.GENERATION = "Random Graph"
-    mt.WEIGHT = "smallrand"
-    mt.CLOSURE = "Total Closure"
-    mt.DISTRIBUTION = "deg"
-    # mt.test_1()
-    mt.test_2(generate=True, verbose=True)
-    # mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=True)
+    Parallel(n_jobs=1)(delayed(parallel_test)() for i in range(1))
+
+
 
 
 
