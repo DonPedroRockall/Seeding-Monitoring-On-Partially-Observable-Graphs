@@ -25,5 +25,5 @@ def PartialNodeClosure(graph: networkx.Graph, nodes_to_hide: list, **kwargs):
 
 
 class EClosureFunction(Enum):
-    ETotalClosure = {"name": "Total Closure", "function": TotalNodeClosure, "short_name": "total"}
-    EPartialClosure = {"name": "Partial Closure", "function": PartialNodeClosure, "short_name": "part"}
+    ETotalClosure = {"name": "Total Closure", "function": TotalNodeClosure, "short_name": "TOTAL"}
+    EPartialClosure = {"name": "Partial Closure", "function": PartialNodeClosure, "short_name": "PART"}

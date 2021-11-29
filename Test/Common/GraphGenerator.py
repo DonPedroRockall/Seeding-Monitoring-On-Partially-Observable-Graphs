@@ -65,6 +65,6 @@ def CorePeripheryDirectedGraph(power, a=0.99, b=0.7, c=0.5, d=0.01):
 
 
 class EGraphGenerationFunction(Enum):
-    ERandomConnectedDirectedGraph = {"name": "Random Connected graph", "function": RandomConnectedDirectedGraph, "short_name": "rnd"}
-    EGNCConnectedDirectedGraph = {"name": "GNC Connected graph", "function": GNCConnectedDirectedGraph, "short_name": "gnc"}
-    ECorePeripheryDirectedGraph = {"name": "Core-Periphery graph", "function": CorePeripheryDirectedGraph, "short_name": "c-p"}
+    ERandomConnectedDirectedGraph = {"name": "Random Connected graph", "function": RandomConnectedDirectedGraph, "short_name": "RND"}
+    EGNCConnectedDirectedGraph = {"name": "GNC Connected graph", "function": GNCConnectedDirectedGraph, "short_name": "GNC"}
+    ECorePeripheryDirectedGraph = {"name": "Core-Periphery graph", "function": CorePeripheryDirectedGraph, "short_name": "C-P"}

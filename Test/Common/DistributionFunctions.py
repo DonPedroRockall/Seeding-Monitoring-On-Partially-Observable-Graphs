@@ -27,5 +27,5 @@ def UniformDistribution(graph: networkx.Graph, nodes_to_hide: int):
 
 
 class ENodeHidingSelectionFunction(Enum):
-    EDegreeDistribution = {"name": "Degree Distribution", "function": DegreeDistribution, "short_name": "deg"}
-    EUniformDistribution = {"name": "Uniform Distribution", "function": UniformDistribution, "short_name": "unif"}
+    EDegreeDistribution = {"name": "Degree Distribution", "function": DegreeDistribution, "short_name": "DEG"}
+    EUniformDistribution = {"name": "Uniform Distribution", "function": UniformDistribution, "short_name": "UNIF"}

@@ -43,7 +43,7 @@ def SetRandomEdgeWeightsByLambda(graph: nx.DiGraph, Lambda, attribute="weight", 
 
 
 class EWeightSetterFunction(Enum):
-    EUniformWeights = {"name": "Uniform", "function": UniformWeights, "short_name": "uniform"}
-    EInDegreeWeights = {"name": "In-Degree", "function": InDegreeWeights, "short_name": "indegree"}
-    EGaussWeights = {"name": "Gauss", "function": GaussWeights, "short_name": "gauss"}
-    ECustom = {"name": "Custom", "function": SetRandomEdgeWeightsByLambda, "short_name": "custom"}
+    EUniformWeights = {"name": "Uniform", "function": UniformWeights, "short_name": "UNIF"}
+    EInDegreeWeights = {"name": "In-Degree", "function": InDegreeWeights, "short_name": "INDEG"}
+    EGaussWeights = {"name": "Gauss", "function": GaussWeights, "short_name": "GAUSS"}
+    ECustom = {"name": "Custom", "function": SetRandomEdgeWeightsByLambda, "short_name": "CUSTOM"}

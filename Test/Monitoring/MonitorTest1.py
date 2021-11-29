@@ -47,19 +47,22 @@ class MonitorTester:
     def test_2(self, verbose=False):
         """Performs a test by generating a graph triple and executing the monitor placement on all of them"""
         # Generate the graph triplet
-        full, part, recv = GenerateRandomGraphTriple(self.NUM_NODES,
-                                                     self.NUM_TO_HIDE,
-                                                     self.GENERATION.value["function"],
-                                                     self.DISTRIBUTION.value["function"],
-                                                     self.CLOSURE.value["function"],
-                                                     None, "deg", True)
+        # full, part, recv = GenerateRandomGraphTriple(self.NUM_NODES,
+        #                                              self.NUM_TO_HIDE,
+        #                                              self.GENERATION.value["function"],
+        #                                              self.DISTRIBUTION.value["function"],
+        #                                              self.CLOSURE.value["function"],
+        #                                              None, "deg", True)
+        full = networkx.gnc_graph(100)
+        part = full.copy()
+        recv = full.copy()
 
         # Write the graph to path
         if verbose:
             cprint(bcolors.OKGREEN, "Writing generated graph to file...")
-        WriteGraphTriple(self.DATASET_PATH, self.FOLDER, GenerateGraphFilename(self.NUM_NODES, self.NUM_TO_HIDE,
-                         self.NUM_SOURCES, self.NUM_TARGETS, self.GENERATION, self.DISTRIBUTION, self.CLOSURE, self.WEIGHT),
-                         full, part, recv)
+        # WriteGraphTriple(self.DATASET_PATH, self.FOLDER, GenerateGraphFilename(self.NUM_NODES, self.NUM_TO_HIDE,
+        #                  self.NUM_SOURCES, self.NUM_TARGETS, self.GENERATION, self.DISTRIBUTION, self.CLOSURE, self.WEIGHT),
+        #                  full, part, recv)
 
         return self.perform_test(full, part, recv)
 
