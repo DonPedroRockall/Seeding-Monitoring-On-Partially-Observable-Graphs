@@ -2,8 +2,8 @@ from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, ParallelData
     SetSameWeightsToOtherGraphs
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
-from Utilities.DrawGraph import DrawGraph
-from Utilities.PrintResultsSeeding import Avg, CreateTable, AddRow
+from Common.DrawGraph import DrawGraph
+from Common.PrintResultsSeeding import Avg, CreateTable, AddRow
 from Seeding.IC_model import *
 from prettytable import PrettyTable
 from definitions import ROOT_DIR

@@ -1,4 +1,5 @@
 import sys
+from threading import Thread, Lock
 
 
 class bcolors:
@@ -25,12 +26,17 @@ def cprint(color, *args):
 
 def fprint(path, *args):
     """
-    Prints to a file using the standard print function. Useful to redirect console output to a file
+    Prints to a file using the standard print function. Useful to redirect console output to a file.
+    This function is thread save using python Lock, to avoid the merge of two files and ensure thread-safety
         :param path:        The path where to write the file to
         :param args:        What to print, in standard python print syntax
     """
+    mutex = Lock()
+    mutex.acquire()
+
     original_stdout = sys.stdout
-    with open(path, 'w+') as f:
+    with open(path, 'a+') as f:
         sys.stdout = f                                      # Change the standard output to the file we created.
         print(*args)
         sys.stdout = original_stdout                        # Reset the standard output to its original value
+    mutex.release()

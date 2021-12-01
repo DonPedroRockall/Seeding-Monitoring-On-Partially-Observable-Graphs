@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.HidingFunctions import TotalNodeClosure
-from Utilities.ColorPrints import *
+from Common.ColorPrints import *
 from Test.Common.GraphGenerator import GNCConnectedDirectedGraph
 from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
 from definitions import ROOT_DIR as ROOT
@@ -16,8 +16,11 @@ from definitions import ROOT_DIR as ROOT
 def GenerateRandomGraphTriple(number_of_nodes: int,
                               num_nodes_to_hide: int,
                               generation_function=GNCConnectedDirectedGraph,
+                              generation_kwargs={},
                               distribution_function=DegreeDistribution,
-                              hiding_function=TotalNodeClosure,
+                              distribution_kwargs={},
+                              closure_function=TotalNodeClosure,
+                              closure_kwargs={},
                               influential_threshold=0,
                               influential_centrality="deg",
                               verbose=False):
@@ -30,8 +33,11 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     :param number_of_nodes:             Number of nodes of the full graph
     :param num_nodes_to_hide:           Number of nodes to hide
     :param generation_function:         Function to use to generate the random initial full graph
+    :param generation_kwargs:           Parameters to pass to the generation function
     :param distribution_function:       Function(graph, int) -> list<nodes> that chooses the nodes to hide
-    :param hiding_function:             Function(graph, list<nodes>) -> graph that chooses which edges to hide
+    :param distribution_kwargs:         Parameters to pass to the distribution function
+    :param closure_function:            Function(graph, list<nodes>) -> graph that chooses which edges to hide
+    :param closure_kwargs:              Parameters to pass to the closure function
     :param influential_centrality:      The centrality measure to use to choose which nodes are influential and have to be
                                         recovered and which ones are to ignore (valid values: "deg" (degree centrality) or
                                         "katz" (katz centrality))
@@ -44,16 +50,16 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     """
 
     # Generate a full graph
-    full_graph = generation_function(number_of_nodes)
+    full_graph = generation_function(number_of_nodes, **generation_kwargs)
 
     # Generate a copy and start removing edges
     part_obs_graph = full_graph.copy()
-    nodes_to_hide = distribution_function(part_obs_graph, num_nodes_to_hide)
+    nodes_to_hide = distribution_function(part_obs_graph, num_nodes_to_hide, **distribution_kwargs)
 
     if verbose:
         cprint(bcolors.OKBLUE, "Nodes selected for hiding:", nodes_to_hide)
 
-    part_obs_graph = hiding_function(part_obs_graph, nodes_to_hide)
+    part_obs_graph = closure_function(part_obs_graph, nodes_to_hide, **closure_kwargs)
 
     # Adaptive Influential Treshold
     if influential_threshold is None:
@@ -74,10 +80,12 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
     return full_graph, part_obs_graph, reconstructed_graph
 
 
-def ParallelDatasetGeneration(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr,
-                              num_cores=4, num_of_graphs=10, file_path=ROOT):
+def ParallelDatasetGeneration(num_nodes, num_to_hide, gen_func, gen_kwargs, distr_func, distr_kwargs, closure_func,
+                              closure_kwargs, inf_thresh, inf_centr, num_cores=4, num_of_graphs=16, file_path=ROOT):
     # Result storage
-    graph_list = Parallel(n_jobs=num_cores)(delayed(GenerateRandomGraphTriple)(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr, True) for _ in range(num_of_graphs))
+    graph_list = Parallel(n_jobs=num_cores)(delayed(GenerateRandomGraphTriple)(
+        num_nodes, num_to_hide, gen_func, gen_kwargs, distr_func, distr_kwargs, closure_func, closure_kwargs,
+        inf_thresh, inf_centr, True) for _ in range(num_of_graphs))
 
     # Write to file
     i = 0

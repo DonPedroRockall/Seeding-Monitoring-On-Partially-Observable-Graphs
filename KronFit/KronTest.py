@@ -1,8 +1,6 @@
-import networkx
-
 from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
-from Test.Common.Utility import GetVirtualNodesByLabel
-from Utilities.DrawGraph import DrawGraph
+from Common.GraphUtilities import GetVirtualNodesByLabel
+from Common.DrawGraph import DrawGraph
 
 
 full, part, recv = GenerateRandomGraphTriple(20, 5, verbose=True)

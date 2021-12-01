@@ -4,7 +4,7 @@ from joblib import Parallel, delayed
 import networkx as nx
 import numpy
 import random
-from Utilities.PrintResultsSeeding import Avg
+from Common.PrintResultsSeeding import Avg
 
 # for the IC model, we only need the edge weights (assigned randomly in the range [0, 0.1]);
 # in the following, the adjectives 'influenced' and 'activated' are used interchangeably

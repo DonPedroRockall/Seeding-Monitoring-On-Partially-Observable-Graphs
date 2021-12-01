@@ -4,7 +4,7 @@ import operator
 import networkx
 import networkx as nx
 
-from Utilities.DrawGraph import DrawGraph
+from Common.DrawGraph import DrawGraph
 
 
 def N_delta(G, sup_source):

@@ -1,5 +1,3 @@
-import sys
-
 from joblib import delayed, Parallel
 from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors
 from Monitoring.MonitorPlacement.Monitor import PlaceMonitors
@@ -9,9 +7,9 @@ from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
 from Test.Common.DatasetReader import WriteGraphTriple, ReadGraphTriple
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
-from Test.Common.Utility import *
+from Common.GraphUtilities import *
 from Test.Common.WeightGenerator import EWeightSetterFunction
-from Utilities.ColorPrints import bcolors, cprint, fprint
+from Common.ColorPrints import bcolors, cprint, fprint
 from Test.Common.GraphGenerator import EGraphGenerationFunction
 from definitions import ROOT_DIR
 
@@ -25,8 +23,11 @@ class MonitorTester:
         self.NUM_SOURCES = 10
         self.NUM_TARGETS = 4
         self.GENERATION = EGraphGenerationFunction.EGNCConnectedDirectedGraph.value
+        self.GENERATION_KWARGS = {}
         self.CLOSURE = EClosureFunction.ETotalClosure.value
+        self.CLOSURE_KWARGS = {}
         self.DISTRIBUTION = ENodeHidingSelectionFunction.EDegreeDistribution.value
+        self.DISTRIBUTION_KWARGS = {}
         self.WEIGHT = EWeightSetterFunction.EInDegreeWeights.value
         self.WEIGHT_KWARGS = {}
         self.DATASET_PATH = ROOT_DIR + "/Datasets"
@@ -47,22 +48,24 @@ class MonitorTester:
     def test_2(self, verbose=False):
         """Performs a test by generating a graph triple and executing the monitor placement on all of them"""
         # Generate the graph triplet
-        # full, part, recv = GenerateRandomGraphTriple(self.NUM_NODES,
-        #                                              self.NUM_TO_HIDE,
-        #                                              self.GENERATION.value["function"],
-        #                                              self.DISTRIBUTION.value["function"],
-        #                                              self.CLOSURE.value["function"],
-        #                                              None, "deg", True)
-        full = networkx.gnc_graph(100)
-        part = full.copy()
-        recv = full.copy()
+        full, part, recv = GenerateRandomGraphTriple(self.NUM_NODES,
+                                                     self.NUM_TO_HIDE,
+                                                     self.GENERATION.value["function"],
+                                                     self.GENERATION_KWARGS,
+                                                     self.DISTRIBUTION.value["function"],
+                                                     self.DISTRIBUTION_KWARGS,
+                                                     self.CLOSURE.value["function"],
+                                                     self.CLOSURE_KWARGS,
+                                                     None, "deg", True)
 
-        # Write the graph to path
         if verbose:
             cprint(bcolors.OKGREEN, "Writing generated graph to file...")
-        # WriteGraphTriple(self.DATASET_PATH, self.FOLDER, GenerateGraphFilename(self.NUM_NODES, self.NUM_TO_HIDE,
-        #                  self.NUM_SOURCES, self.NUM_TARGETS, self.GENERATION, self.DISTRIBUTION, self.CLOSURE, self.WEIGHT),
-        #                  full, part, recv)
+
+        # Write the graph to path
+        WriteGraphTriple(self.DATASET_PATH, self.FOLDER, GenerateGraphFilename(
+            self.NUM_NODES, self.NUM_TO_HIDE, self.GENERATION.value["short_name"],
+            self.DISTRIBUTION.value["short_name"], self.CLOSURE.value["short_name"],
+            self.WEIGHT.value["short_name"]), full, part, recv)
 
         return self.perform_test(full, part, recv)
 
@@ -118,8 +121,12 @@ class MonitorTester:
         valid_nodes = set(part.nodes())
 
         if len(valid_nodes) < self.NUM_SOURCES + self.NUM_TARGETS:
-            raise ValueError("Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
-                             "select {0} sources and {1} targets".format(self.NUM_SOURCES, self.NUM_TARGETS))
+            print(f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
+                  f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
+            return
+
+            raise ValueError(f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
+                             f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
 
         sources = list(random.sample(valid_nodes, self.NUM_SOURCES))
         for src in sources:
@@ -178,11 +185,7 @@ class MonitorTester:
 
         cprint(bcolors.BOLD, "-- General Graph Information --")
         print("Full graph:\n", full.number_of_nodes(), "nodes\n", full.number_of_edges(), "edges\n")
-
-        cprint(bcolors.BOLD, "-- General Graph Information --")
         print("Part graph:\n", part.number_of_nodes(), "nodes\n", part.number_of_edges(), "edges\n")
-
-        cprint(bcolors.BOLD, "-- General Graph Information --")
         print("Recv graph:\n", recv.number_of_nodes(), "nodes\n", recv.number_of_edges(), "edges\n")
 
         print("Generation Function:", self.GENERATION.value["name"])
@@ -221,11 +224,7 @@ class MonitorTester:
 
         fprint(path, "-- General Graph Information --")
         fprint(path, "Full graph:\n", full.number_of_nodes(), "nodes\n", full.number_of_edges(), "edges\n")
-
-        fprint(path, "-- General Graph Information --")
         fprint(path, "Part graph:\n", part.number_of_nodes(), "nodes\n", part.number_of_edges(), "edges\n")
-
-        fprint(path, "-- General Graph Information --")
         fprint(path, "Recv graph:\n", recv.number_of_nodes(), "nodes\n", recv.number_of_edges(), "edges\n")
 
         fprint(path, "Generation Function:", self.GENERATION.value["name"])
@@ -258,14 +257,17 @@ def single_test(**kwargs):
     mt.NUM_TO_HIDE = kwargs["NUM_TO_HIDE"]
     mt.NUM_SOURCES = kwargs["NUM_SOURCES"]
     mt.NUM_TARGETS = kwargs["NUM_TARGETS"]
-    mt.DISTRIBUTION = kwargs["DISTRIBUTION"]
     mt.FOLDER = kwargs["FOLDER"]
+    mt.DISTRIBUTION = kwargs["DISTRIBUTION"]
+    mt.DISTRIBUTION_KWARGS = kwargs["DISTRIBUTION_KWARGS"]
     mt.GENERATION = kwargs["GENERATION"]
+    mt.GENERATION_KWARGS = kwargs["GENERATION_KWARGS"]
     mt.CLOSURE = kwargs["CLOSURE"]
+    mt.CLOSURE_KWARGS = kwargs["CLOSURE_KWARGS"]
     mt.WEIGHT = kwargs["WEIGHT"]
     mt.WEIGHT_KWARGS = kwargs["WEIGHT_KWARGS"]
 
-    mt.PRINT_TO_FILE = "Results/SyntheticDatasets/" + kwargs["FILENAME"]
+    mt.PRINT_TO_FILE = ROOT_DIR + "/Test/Monitoring/Results/SyntheticDatasets/" + kwargs["FILENAME"]
     # mt.test_1()
     mt.test_2(verbose=True)
     # mt.test_real_dataset(ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote.txt", directed=True, generate=True)
@@ -273,8 +275,7 @@ def single_test(**kwargs):
 
 if __name__ == "__main__":
     """
-    NUM_NODES = [1500]
-    
+    NUM_NODES = [1000]
     NUM_SOURCES = [10, 20, 50, 100]
     NUM_TARGETS = [10, 20, 50, 100]
     FOLDER = ["Medium_1500"]
@@ -284,23 +285,47 @@ if __name__ == "__main__":
     CLOSURE = [EHidingFunctions.ETotalClosure]
     """
 
-    NUM_TO_HIDE = [50, 100, 200, 250, 350, 500, 650, 750, 800, 950]
+    # This is the variable hyperparameter. The test will parallelize N runs of the algorithm, once for each
+    # value in the list below. This helps finding a "threshold" where more that X% of hidden will make the
+    # Graph Recovery meaningless (e.g. too few nodes to perform inference from)
+    NUM_TO_HIDE = [50, 100, 200, 250, 350, 500, 650, 750, 800, 900]
 
-    Parallel(n_jobs=10)(delayed(single_test)(**{
-        "NUM_NODES": 1000,
+    # Control this dictionary to set the hyperparameters of the algorithm for testing. Do not change the code
+    # within the Parallel statement below, as it ensures consistency between graph analysis and report filenames
+    fixed_hyperparameters = {
+        "num_nodes": 1000,
+        "num_sources": 10,
+        "num_targets": 10,
+        "generation": EGraphGenerationFunction.ECorePeripheryDirectedGraph,
+        "generation_kwargs": {},
+        "distribution": ENodeHidingSelectionFunction.EDegreeDistribution,
+        "distribution_kwargs": {},
+        "closure": EClosureFunction.ECrawlerClosure,
+        "closure_kwargs": {},
+        "weight": EWeightSetterFunction.EInDegreeWeights,
+        "weight_kwargs": {}
+    }
+
+    # Main call for parallelization. Do not change code below this line
+    Parallel(n_jobs=len(NUM_TO_HIDE))(delayed(single_test)(**{
+        "NUM_NODES": fixed_hyperparameters["num_nodes"],
         "NUM_TO_HIDE": NUM_TO_HIDE[i],
-        "NUM_SOURCES": 10,
-        "NUM_TARGETS": 10,
-        "DISTRIBUTION": ENodeHidingSelectionFunction.EDegreeDistribution,
-        "GENERATION": EGraphGenerationFunction.EGNCConnectedDirectedGraph,
-        "CLOSURE": EClosureFunction.ETotalClosure,
-        "WEIGHT": EWeightSetterFunction.EInDegreeWeights,
-        "WEIGHT_KWARGS": {},
+        "NUM_SOURCES": fixed_hyperparameters["num_sources"],
+        "NUM_TARGETS": fixed_hyperparameters["num_targets"],
+        "GENERATION": fixed_hyperparameters["generation"],
+        "GENERATION_KWARGS": fixed_hyperparameters["generation_kwargs"],
+        "DISTRIBUTION": fixed_hyperparameters["distribution"],
+        "DISTRIBUTION_KWARGS": fixed_hyperparameters["distribution_kwargs"],
+        "CLOSURE": fixed_hyperparameters["closure"],
+        "CLOSURE_KWARGS": fixed_hyperparameters["closure_kwargs"],
+        "WEIGHT": fixed_hyperparameters["weight"],
+        "WEIGHT_KWARGS": fixed_hyperparameters["weight_kwargs"],
         "FOLDER": "Synthetic",
-        "FILENAME": GenerateGraphFilename(
-            1000, NUM_TO_HIDE[i], 10, 10,
-            EGraphGenerationFunction.EGNCConnectedDirectedGraph.value["short_name"],
-            ENodeHidingSelectionFunction.EDegreeDistribution.value["short_name"],
-            EClosureFunction.ETotalClosure.value["short_name"],
-            EWeightSetterFunction.EInDegreeWeights.value["short_name"],
-        )}) for i in range(10))
+        "FILENAME": GenerateReportFilename(
+            fixed_hyperparameters["num_nodes"], NUM_TO_HIDE[i],
+            fixed_hyperparameters["num_sources"], fixed_hyperparameters["num_targets"],
+            fixed_hyperparameters["generation"].value["short_name"],
+            fixed_hyperparameters["distribution"].value["short_name"],
+            fixed_hyperparameters["closure"].value["short_name"],
+            fixed_hyperparameters["weight"].value["short_name"],
+        )}) for i in range(len(NUM_TO_HIDE)))

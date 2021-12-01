@@ -2,7 +2,7 @@ from prettytable import PrettyTable
 
 
 def AddRow(t: PrettyTable, k, vr_full, vr_part, vr_recv):
-    t.add_row([k, vr_full, vr_part, vr_recv])
+    t.add_row([k, vr_full, ,vr_part vr_recv])
     return t
 
 

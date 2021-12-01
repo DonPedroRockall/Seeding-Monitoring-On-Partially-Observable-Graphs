@@ -88,7 +88,7 @@ def get_infected_subgraph(graph, infected_nodes):
         singleton = True
         for out_node in graph.out_edges([node]):
             if out_node[1] in infected_nodes:
-                subgraph.add_edge(node, out_node[1], act_prob=graph[node][out_node[1]]['act_prob'])
+                subgraph.add_edge(node, out_node[1], weight=graph[node][out_node[1]]['weight'])
                 singleton = False
         if singleton:
             subgraph.add_node(node)
@@ -108,7 +108,7 @@ def get_infected_subgraphs(graph: nx.DiGraph, infected_nodes):
             singleton = node
             for out_node in infected_graph.out_edges([node]):
                 if out_node[1] in comp:
-                    subgraph.add_edge(node, out_node[1], act_prob=infected_graph[node][out_node[1]]['act_prob'])
+                    subgraph.add_edge(node, out_node[1], weight=infected_graph[node][out_node[1]]['weight'])
         if subgraph.size() == 0:
             subgraph.add_node(singleton)
         subgraphs.append(subgraph)
@@ -124,7 +124,7 @@ def getInfectedCalibratedSubgraph(graph: nx.DiGraph, infected_nodes):
                 prob = 1
                 for neighboor in graph.successors(node):
                     if neighboor not in infected_nodes:
-                        prob *= (1 - graph[node][neighboor]['act_prob'])
-                subgraph.add_edge(node, out_node, act_prob=graph[node][out_node]['act_prob'] * prob)
+                        prob *= (1 - graph[node][neighboor]['weight'])
+                subgraph.add_edge(node, out_node, weight=graph[node][out_node]['weight'] * prob)
 
     return subgraph

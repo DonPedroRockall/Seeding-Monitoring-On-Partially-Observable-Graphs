@@ -3,7 +3,7 @@ import operator
 import random
 import networkx
 
-from Utilities.ColorPrints import fprint
+from Common.ColorPrints import fprint
 
 
 def contractGraph(graph: networkx.DiGraph, nodes: list, new_label="super"):

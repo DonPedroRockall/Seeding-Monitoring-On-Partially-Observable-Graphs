@@ -1,6 +1,6 @@
 import networkx as nx 
 import pickle
-from Queue import PriorityQueue 
+from queue import PriorityQueue
 import copy
 import random
 import string
@@ -434,12 +434,12 @@ class Camerini():
 							roots_ = self.find_roots(branching)
 									
 							if len(roots_) == 0:
-								print ('No other roots found')
+								print('No other roots found')
 							else:
 								i = 0
 								for root_ in roots_:
 									if root_ in roots:
-										print ('root', root_, 'already in', roots)
+										print('root', root_, 'already in', roots)
 										i += 1
 									else:
 										print('new root', root_)

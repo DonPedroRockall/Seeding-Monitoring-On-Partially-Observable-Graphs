@@ -3,7 +3,7 @@ import networkx
 from enum import Enum
 
 
-def DegreeDistribution(graph: networkx.Graph, nodes_to_hide: int):
+def DegreeDistribution(graph: networkx.Graph, nodes_to_hide: int, **kwargs):
     """Samples nodes to select for hiding based on the degree of the node.
     Nodes of the graph that have an higher degree centrality are more likely to be selected and hidden"""
     to_hide = list()
@@ -15,7 +15,7 @@ def DegreeDistribution(graph: networkx.Graph, nodes_to_hide: int):
     return to_hide
 
 
-def UniformDistribution(graph: networkx.Graph, nodes_to_hide: int):
+def UniformDistribution(graph: networkx.Graph, nodes_to_hide: int, **kwargs):
     """Samples nodes to select for hiding from a uniform distribution.
     All nodes of the graph have the same probability of being selected and hidden"""
     to_hide = list()

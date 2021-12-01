@@ -1,8 +1,6 @@
 import os
 import networkx
 
-from Test.Common.Utility import GenerateGraphFilename
-
 
 def ReadGraphTriple(path, folder, index, graph_type=networkx.DiGraph):
     """

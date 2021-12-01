@@ -32,6 +32,11 @@ def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
                     graph[u][v][key] = data[key]
 
 
-def GenerateGraphFilename(num_of_nodes: int, num_hidden: int, num_src: int, num_trg: int, gen_func, hiding_func, closure_func, weight_func):
+def GenerateReportFilename(num_of_nodes: int, num_hidden: int, num_src: int, num_trg: int, gen_func, hiding_func, closure_func, weight_func):
+    """Generates a short filename in which are indicated all the main properties of a graph for a report"""
+    return f"num{num_of_nodes}_hid{num_hidden}_src{num_src}_trg{num_trg}_gen{gen_func}_dst{hiding_func}_cls{closure_func}_wgt{weight_func}.txt"
+
+
+def GenerateGraphFilename(num_of_nodes: int, num_hidden: int, gen_func, hiding_func, closure_func, weight_func):
     """Generates a short filename in which are indicated all the main properties of a graph"""
-    return f"num{num_of_nodes}_hid{num_hidden}_src{num_src}_trg{num_trg}_gen{gen_func}_dst{hiding_func}_cls{closure_func}_wgt{weight_func}.txt "
+    return f"num{num_of_nodes}_hid{num_hidden}_gen{gen_func}_dst{hiding_func}_cls{closure_func}_wgt{weight_func}.txt"

@@ -5,8 +5,8 @@ from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors
 from Monitoring.MonitorPlacement.EfficientAlgorithm import eAlgorithm
 from Monitoring.MonitorPlacement.MinimumMonitorSetConstruction import MMSC, N_delta
 from Monitoring.MonitorPlacement.MonitorUtility import SourceContraction
-from Utilities.ColorPrints import *
-from Utilities.DrawGraph import DrawGraph
+from Common.ColorPrints import *
+from Common.DrawGraph import DrawGraph
 from Test.Common.GraphGenerator import RandomConnectedDirectedGraph
 
 

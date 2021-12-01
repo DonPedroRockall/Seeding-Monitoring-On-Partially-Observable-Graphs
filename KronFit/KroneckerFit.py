@@ -7,7 +7,7 @@ import os.path
 import networkx as nx
 from networkx import DiGraph
 
-from Utilities.ColorPrints import cprint, bcolors
+from Common.ColorPrints import cprint, bcolors
 from definitions import SNAP_EXE_PATH
 
 

@@ -1,0 +1,55 @@
+== MONITOR TEST REPORT ==
+
+-- General Information --
+100 sources: [493, 606, 267, 369, 922, 995, 314, 462, 712, 991, 123, 130, 895, 830, 355, 195, 577, 381, 212, 808, 145, 257, 246, 35, 973, 51, 485, 358, 943, 993, 83, 408, 934, 8, 726, 344, 950, 711, 980, 529, 67, 956, 27, 186, 890, 444, 810, 799, 223, 630, 904, 803, 334, 710, 326, 988, 737, 631, 57, 90, 127, 944, 340, 5, 375, 685, 501, 620, 717, 224, 617, 765, 291, 506, 110, 689, 668, 170, 279, 41, 158, 47, 599, 264, 499, 319, 612, 721, 140, 137, 55, 74, 250, 760, 774, 434, 222, 951, 21, 313]
+100 targets: [89, 731, 652, 536, 751, 627, 955, 320, 273, 364, 343, 271, 298, 165, 14, 568, 940, 497, 687, 563, 163, 206, 176, 935, 70, 433, 254, 24, 415, 7, 747, 541, 251, 597, 636, 663, 579, 37, 519, 997, 633, 936, 159, 546, 178, 977, 1, 99, 707, 523, 324, 854, 244, 896, 453, 545, 796, 825, 169, 58, 9, 657, 438, 346, 510, 323, 113, 779, 859, 786, 202, 300, 656, 32, 425, 443, 903, 463, 696, 129, 847, 132, 479, 646, 36, 331, 727, 135, 248, 864, 111, 148, 874, 614, 322, 845, 280, 256, 119, 317]
+Hidden Nodes: 100
+Recovered Nodes: 11
+
+-- General Graph Information --
+Full graph:
+ 1000 nodes
+ 14239 edges
+
+Part graph:
+ 900 nodes
+ 11370 edges
+
+Recv graph:
+ 911 nodes
+ 11700 edges
+
+Generation Function: GNC Connected graph
+Hiding Function: Degree Distribution
+Weight Function: In-Degree with parameters: {}
+Closure Function: Total Closure
+
+-- Full Monitors on Full Graph --
+Number of Total infected nodes: 120 ( 12.0 % of total nodes)
+Number of Non-Source nodes infected: 20 ( 2.0 % of total nodes)
+Number of Infected Targets: 5 ( 0.5 % of total nodes) 5.0 % of total targets)
+Number of monitors: 2 ( 0.2 % of total nodes)
+Independent Cascade ran for 3 iterations
+
+-- Part Monitors on Full Graph --
+Number of Total infected nodes: 125 ( 12.5 % of total nodes)
+Number of Non-Source nodes infected: 25 ( 2.5 % of total nodes)
+Number of Infected Targets: 5 ( 0.5 % of total nodes) 5.0 % of total targets)
+Number of monitors: 2 ( 0.2 % of total nodes)
+Independent Cascade ran for 3 iterations
+
+-- Recv Monitors on Recv Graph --
+Number of Total infected nodes: 127 ( 13.940724478594952 % of total nodes)
+Number of Non-Source nodes infected: 27 ( 2.96377607025247 % of total nodes)
+Number of Infected Targets: 6 ( 0.6586169045005488 % of total nodes) 6.0 % of total targets)
+Number of monitors: 2 ( 0.21953896816684962 % of total nodes)
+Independent Cascade ran for 4 iterations
+
+-- Recv Monitors on Full Graph --
+Number of Total infected nodes: 134 ( 13.4 % of total nodes)
+Number of Non-Source nodes infected: 34 ( 3.4000000000000004 % of total nodes)
+Number of Infected Targets: 8 ( 0.8 % of total nodes) 8.0 % of total targets)
+Number of monitors: 2 ( 0.2 % of total nodes)
+Independent Cascade ran for 3 iterations
+
+==============================================================

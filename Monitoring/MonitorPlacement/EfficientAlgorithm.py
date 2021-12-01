@@ -2,7 +2,7 @@ import networkx as nx
 from networkx.algorithms.flow import *
 from collections import deque
 
-from Utilities.ColorPrints import bcolors, cprint
+from Common.ColorPrints import bcolors, cprint
 
 
 def bfs_res(ResGraph, src):
