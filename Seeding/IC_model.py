@@ -3,7 +3,7 @@ from joblib import Parallel, delayed
 import networkx as nx
 import random
 from Utilities.PrintResultsSeeding import Avg
-from Test.Common.Utility import SetRandomEdgeWeights, IsVirtualNode
+from Test.Common.Utility import IsVirtualNode
 
 
 # for the IC model, we only need the edge weights (assigned randomly in the range [0, 0.1]);

@@ -57,7 +57,8 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 
     # Adaptive Influential Treshold
     if influential_threshold is None:
-        influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(part_obs_graph.number_of_nodes())
+        influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(
+            part_obs_graph.number_of_nodes())
         if verbose:
             cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
 
@@ -77,14 +78,42 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 def ParallelDatasetGeneration(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr,
                               num_cores=4, num_of_graphs=10, file_path=ROOT):
     # Result storage
-    graph_list = Parallel(n_jobs=num_cores)(delayed(GenerateRandomGraphTriple)(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh, inf_centr, True) for _ in range(num_of_graphs))
+    graph_list = Parallel(n_jobs=num_cores)(
+        delayed(GenerateRandomGraphTriple)(num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh,
+                                           inf_centr, True) for _ in range(num_of_graphs))
 
     # Write to file
     i = 0
     for full, part, recv in graph_list:
-        nx.write_weighted_edgelist(full, file_path + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
-        nx.write_weighted_edgelist(part, file_path + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
-        nx.write_weighted_edgelist(recv, file_path + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(full, file_path + str(i) + "_full_hid" + str(num_to_hide) + "_tresh" + str(
+            inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(part, file_path + str(i) + "_part_hid" + str(num_to_hide) + "_tresh" + str(
+            inf_thresh) + ".txt")
+        nx.write_weighted_edgelist(recv, file_path + str(i) + "_recv_hid" + str(num_to_hide) + "_tresh" + str(
+            inf_thresh) + ".txt")
+        i += 1
+
+    # Return if needed
+    return graph_list
+
+
+def ParallelVarHiddenGeneration(num_nodes, gen_func, distr_func, hiding_func, inf_thresh, inf_centr,
+                                num_cores=4, file_path=ROOT):
+
+    # Generate a full graph
+    full_graph = gen_func(num_nodes)
+
+    # Result storage
+    graph_list = Parallel(n_jobs=num_cores)(
+        delayed(GenerateRandomGraphTriple)(full_graph, num_nodes, num_to_hide, gen_func, distr_func, hiding_func, inf_thresh,
+                                           inf_centr, True) for num_to_hide in range(100, num_nodes-100, 200))
+
+    nx.write_weighted_edgelist(full_graph, file_path + "full_graph.txt")
+    # Write to file
+    i = 0
+    for _, part, recv in graph_list:
+        nx.write_weighted_edgelist(part, file_path + "part_" + str(i * 200 + 100) + "_hidden" + ".txt")
+        nx.write_weighted_edgelist(recv, file_path + "recv_" + str(i * 200 + 100) + "_hidden" + ".txt")
         i += 1
 
     # Return if needed

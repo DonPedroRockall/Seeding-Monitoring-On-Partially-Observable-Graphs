@@ -20,7 +20,7 @@ NUM_RUN = 40
 NUM_CORES = 4
 
 
-NUM_NODES = 2000
+NUM_NODES = 1500
 NODES_TO_DELETE = 1000
 GENERATION = GNCConnectedDirectedGraph
 DISTRIBUTION = DegreeDistribution
@@ -28,7 +28,7 @@ HIDING = TotalNodeClosure
 INF_THRESH = 5
 INF_CENTR = "deg"
 GRAPH_FILE_PATH = "/Datasets/Seeding/Variable_Hidden_Degree/"
-TEST_FILE_PATH = "../Results/IC_model/Tests_Comparison_Degree.txt"
+TEST_FILE_PATH = "../Results/IC_model/Variable_Hidden_Degree.txt"
 ################################################################
 
 test_file = open(TEST_FILE_PATH, "a")
@@ -47,7 +47,7 @@ full = nx.read_weighted_edgelist(ROOT_DIR + GRAPH_FILE_PATH + 'full_graph.txt',
 
 InitGraphParametersIC(full)
 
-for i in range(100, NUM_NODES-100, 100):
+for i in range(100, NUM_NODES-100, 200):
 
     part = nx.read_weighted_edgelist(ROOT_DIR + GRAPH_FILE_PATH + "part_" + str(i) + "_hidden.txt",
                                      create_using=nx.DiGraph)

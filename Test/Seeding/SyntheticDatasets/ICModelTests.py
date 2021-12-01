@@ -4,7 +4,6 @@ from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
 from Test.Common.GraphGenerator import *
 from Test.Common.Utility import GetVirtualNodesByLabel, IsVirtualNode, SetSameWeightsToOtherGraphs
-from Utilities.DrawGraph import DrawGraph
 from Utilities.PrintResultsSeeding import *
 from Seeding.IC_model import *
 from prettytable import PrettyTable
@@ -13,22 +12,22 @@ import time
 
 ####################### TEST PARAMETERS  #######################
 # You can change the following parameters for various test cases
-GRAPH_START_IDX = 4
-GRAPH_END_IDX = 9
+GRAPH_START_IDX = 1
+GRAPH_END_IDX = 5
 SEED_RANGE = 9
 NUM_RUN = 40
 NUM_CORES = 4
 VOTE_RANK_ONLY = True  # select 'False' to run both Basic Greedy and Voterank, 'True' to run Voterank only
 
-NUM_NODES = 300
-NODES_TO_DELETE = [100, 150, 200]
-GENERATION = GNCConnectedDirectedGraph
-DISTRIBUTION = DegreeDistribution
+NUM_NODES = 1500
+NODES_TO_DELETE = 300
+GENERATION = CorePeripheryDirectedGraph
+DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
 INF_THRESH = None
 INF_CENTR = "deg"
-GRAPH_FILE_PATH = "/Datasets/Seeding/Small_Degree/"
-TEST_FILE_PATH = "../Results/IC_model/Tests_Revisited_Degree.txt"
+GRAPH_FILE_PATH = "/Datasets/Seeding/Core_Per_Uniform/"
+TEST_FILE_PATH = "../Results/IC_model/Variable_Hidden_Uniform.txt"
 ################################################################
 
 '''
@@ -36,13 +35,17 @@ ParallelVarHiddenGeneration(NUM_NODES, GENERATION, DISTRIBUTION, HIDING, INF_THR
                             file_path=ROOT_DIR + GRAPH_FILE_PATH)
 '''
 
-ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE[0], GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
+
+ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE, GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
                           num_of_graphs=8, file_path=ROOT_DIR+GRAPH_FILE_PATH)
+'''
 ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE[1], GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
                           num_of_graphs=8, file_path=ROOT_DIR+GRAPH_FILE_PATH)
 ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE[2], GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
                           num_of_graphs=8, file_path=ROOT_DIR+GRAPH_FILE_PATH)
 '''
+'''
+
 
 
 test_file = open(TEST_FILE_PATH, "a")
