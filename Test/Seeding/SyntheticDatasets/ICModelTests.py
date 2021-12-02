@@ -1,9 +1,10 @@
-from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, ParallelDatasetGenerationSeed, \
-    SetSameWeightsToOtherGraphs
+from Test.Common.DatasetGenerator import GenerateRandomGraphTriple, ParallelDatasetGeneration, \
+    ParallelVarHiddenGeneration
 from Test.Common.DistributionFunctions import *
 from Test.Common.HidingFunctions import *
-from Common.DrawGraph import DrawGraph
-from Common.PrintResultsSeeding import Avg, CreateTable, AddRow
+from Test.Common.GraphGenerator import *
+from Test.Common.Utility import GetVirtualNodesByLabel, IsVirtualNode, SetSameWeightsToOtherGraphs
+from Utilities.PrintResultsSeeding import *
 from Seeding.IC_model import *
 from prettytable import PrettyTable
 from definitions import ROOT_DIR
@@ -11,79 +12,146 @@ import time
 
 ####################### TEST PARAMETERS  #######################
 # You can change the following parameters for various test cases
-SEED_RANGE = 32
-NUM_RUN = 10
+GRAPH_START_IDX = 1
+GRAPH_END_IDX = 5
+SEED_RANGE = 9
+NUM_RUN = 40
 NUM_CORES = 4
+VOTE_RANK_ONLY = True  # select 'False' to run both Basic Greedy and Voterank, 'True' to run Voterank only
 
-NUM_NODES = 2000
-MIN_EDGES = 100
-NODES_TO_DELETE = 1000
+NUM_NODES = 1500
+NODES_TO_DELETE = 300
+GENERATION = CorePeripheryDirectedGraph
 DISTRIBUTION = UniformDistribution
 HIDING = TotalNodeClosure
+INF_THRESH = None
+INF_CENTR = "deg"
+GRAPH_FILE_PATH = "/Datasets/Seeding/Core_Per_Uniform/"
+TEST_FILE_PATH = "../Results/IC_model/Variable_Hidden_Uniform.txt"
 ################################################################
 
-#ParallelDatasetGenerationSeed(NUM_NODES, MIN_EDGES, NODES_TO_DELETE, DISTRIBUTION, HIDING, num_of_graphs=30,
-#                             file_path=ROOT_DIR + "/Datasets/Seeding/Synthetic_3/")
+'''
+ParallelVarHiddenGeneration(NUM_NODES, GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
+                            file_path=ROOT_DIR + GRAPH_FILE_PATH)
+'''
+
+
+ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE, GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
+                          num_of_graphs=8, file_path=ROOT_DIR+GRAPH_FILE_PATH)
+'''
+ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE[1], GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
+                          num_of_graphs=8, file_path=ROOT_DIR+GRAPH_FILE_PATH)
+ParallelDatasetGeneration(NUM_NODES, NODES_TO_DELETE[2], GENERATION, DISTRIBUTION, HIDING, INF_THRESH, INF_CENTR,
+                          num_of_graphs=8, file_path=ROOT_DIR+GRAPH_FILE_PATH)
+'''
+'''
 
 
 
-test_file = open("../Results/IC_model/Test_3", "a")
+test_file = open(TEST_FILE_PATH, "a")
 test_file.write("--- GRAPH PARAMETERS ---" +
                 "\nModel: IC" +
                 "\nNum. of nodes: " + str(NUM_NODES) +
                 "\nNum. of hidden nodes: " + str(NODES_TO_DELETE) +
                 "\nDistribution function: Uniform" +
                 "\nHiding function: Total Node Closure" +
-                "\n\n")
+                "\nNum. runs per type of graph: " + str(NUM_RUN) +
+                "\n")
+
+exec_t_basic = list()
+exec_t_vote = list()
 
 iter = 0
 
-for i in range(15, 25):
+for i in range(GRAPH_START_IDX, GRAPH_END_IDX):
 
-    start1 = time.time()
+    if VOTE_RANK_ONLY:
+        t = CreateTableVoteOnly()
+    else:
+        t = CreateTableBoth()
 
-    test_file.write(str(iter + 1) + ")\n")
-    t = CreateTable()
+    test_file.write("\n\n" + str(iter + 1) + ")")
 
-    full = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_3/" + str(i) + "_full_"
-                                     + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
+    full = nx.read_weighted_edgelist(ROOT_DIR + GRAPH_FILE_PATH + str(i) + "_full"
+                                     + "_hid" + str(NODES_TO_DELETE) + "_tresh" + str(INF_THRESH) + ".txt",
                                      create_using=nx.DiGraph)
-    part = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_3/" + str(i) + "_part_"
-                                     + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
+    part = nx.read_weighted_edgelist(ROOT_DIR + GRAPH_FILE_PATH + str(i) + "_part"
+                                     + "_hid" + str(NODES_TO_DELETE) + "_tresh" + str(INF_THRESH) + ".txt",
                                      create_using=nx.DiGraph)
-    recv = nx.read_weighted_edgelist(ROOT_DIR + "/Datasets/Seeding/Synthetic_3/" + str(i) + "_recv_"
-                                     + str(NUM_NODES) + "_hid_" + str(NODES_TO_DELETE) + ".txt",
+    recv = nx.read_weighted_edgelist(ROOT_DIR + GRAPH_FILE_PATH + str(i) + "_recv"
+                                     + "_hid" + str(NODES_TO_DELETE) + "_tresh" + str(INF_THRESH) + ".txt",
                                      create_using=nx.DiGraph)
+
+    virtuals = GetVirtualNodesByLabel(part, recv)
 
     InitGraphParametersIC(full)
     InitGraphParametersIC(part)
     InitGraphParametersIC(recv)
     SetSameWeightsToOtherGraphs(full, [part, recv])
 
-    for k in range(1, SEED_RANGE, 5):
-
+    for k in range(1, SEED_RANGE):
         start = time.time()
 
-        mean_full_vote = ParallelSIMVoterank(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
-        mean_part_vote = ParallelSIMVoterank(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
-        mean_recv_vote = ParallelSIMVoterank(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        # VOTERANK EVALUATION
+        vr_full = SIMVoterank(full, k)
+        vr_part = SIMVoterank(part, k)
+        vr_recv = SIMVoterank(recv, k, restricted_nodes=virtuals)
 
-    #    mean_full_basic = ParallelSIMBasicGreedy(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
-    #    mean_part_basic = ParallelSIMBasicGreedy(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
-    #    mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_full_vote = ParallelRunIC(full, vr_full, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_part_vote = ParallelRunIC(part, vr_part, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_recv_vote = ParallelRunIC(recv, vr_recv, num_cores=NUM_CORES, num_run=NUM_RUN)
+        mean_real_vote = ParallelRunIC(full, vr_recv, num_cores=NUM_CORES, num_run=NUM_RUN)
 
         end = time.time()
 
-        print("\nExecution time for iteration " + str(iter + 1) + "-" + str(k) + ": " + str(round((end - start), 2)) + " secs")
+        print(str(iter+1) + "-" + str(k) + " finished voterank")
 
-        t = AddRow(t, k,
-                   round(mean_full_vote, 2),
-                   round(mean_part_vote, 2),
-                   round(mean_recv_vote, 2))
+        exec_t_vote.append(end - start)
 
-    test_file.write(str(t) + "\n\n")
+        if not VOTE_RANK_ONLY:
+            start = time.time()
 
-    end1 = time.time()
-    print("Execution time for graph " + str(iter + 1) + ": " + str(round((end1-start1)/60, 2)) + " mins")
+            # BASIC GREEDY EVALUATION
+            mean_full_basic = ParallelSIMBasicGreedy(full, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+            mean_part_basic = ParallelSIMBasicGreedy(part, k, num_cores=NUM_CORES, num_run=NUM_RUN)
+            mean_recv_basic = ParallelSIMBasicGreedy(recv, k, num_cores=NUM_CORES, num_run=NUM_RUN,
+                                                     restricted_set=virtuals)
+            mean_real_basic = ParallelSIMBasicGreedy(full, k, num_cores=NUM_CORES, num_run=NUM_RUN,
+                                                     restricted_set=virtuals)
 
-    iter += 1
+            end = time.time()
+
+            print(str(iter + 1) + "-" + str(k) + " finished basic greedy")
+
+            exec_t_basic.append(end - start)
+
+        # Adding results to the table
+        if VOTE_RANK_ONLY:
+            t = AddRowVoteOnly(t, k,
+                               round(mean_full_vote, 2),
+                               round(mean_part_vote, 2),
+                               round(mean_recv_vote, 2),
+                               round(mean_real_vote, 2),
+                               )
+        else:
+            t = AddRowBoth(t, k,
+                           round(mean_full_basic, 2),
+                           round(mean_part_basic, 2),
+                           round(mean_recv_basic, 2),
+                           round(mean_real_basic, 2),
+                           round(mean_full_vote, 2),
+                           round(mean_part_vote, 2),
+                           round(mean_recv_vote, 2),
+                           round(mean_real_vote, 2),
+                           )
+
+    test_file.write("\n" + str(t) + "\n")
+
+    if not VOTE_RANK_ONLY:
+        test_file.write("\nAverage exec time for Basic Greedy: " + str(round(Avg(exec_t_basic), 2)) + " secs")
+        exec_t_basic.clear()
+
+    test_file.write("\nAverage exec time for Voterank: " + str(round(Avg(exec_t_vote), 2)) + " secs")
+    exec_t_vote.clear()
+
+    iter += 1'''

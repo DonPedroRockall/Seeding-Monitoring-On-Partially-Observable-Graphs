@@ -17,6 +17,10 @@ def GetVirtualNodesByLabel(part: nx.DiGraph, recv: nx.DiGraph):
     return virtuals
 
 
+def IsVirtualNode(node, virtual_set):
+    return node in virtual_set
+
+
 def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):
     """
     Copies all the attributes of original_graph to all the other graphs in other_graphs list, without altering the
