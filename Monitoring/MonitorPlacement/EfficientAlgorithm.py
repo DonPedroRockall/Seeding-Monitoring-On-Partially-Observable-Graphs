@@ -259,17 +259,6 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
     return monitor_set.union(virtual_monitors), len(S)
 
 
-'''
-[11:55] Diodato FERRAIOLI
-Sia C il cut restituito dall'algoritmo
-ora per ogni (u,v) in C tale che v è virtuale e u no insieriamo monitor in u
-per ogni arco (u,v) in C tale che sono entrambi virtuali
-allora insieriamo monitor in tutti i nodi reali x per cui esiste un path virtuale da x a u
-per tutti gli archi rimanenti facciamo VC
-come controllare che esiste un path virtuale? prenderci il sottografo fatto soltanto di archi virtuali
-e per ogni nodo reale in questo sottografo verificare se esiste un path nel sottografo verso u
-'''
-
 if __name__ == "__main__":
     graph = nx.DiGraph()
     graph.add_edges_from(

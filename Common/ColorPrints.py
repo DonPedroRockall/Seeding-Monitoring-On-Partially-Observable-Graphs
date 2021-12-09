@@ -14,14 +14,18 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def cprint(color, *args):
+def cprint(color, *args, sep=" ", end="\n", flush=False):
     """
     Prints a colored messange on the console
     :param color:           Color to display. Use bcolors from this class for a list of available colors
     :param args:            What to print, in standard python print syntax
+    :param flush:           Print argument. Please refer to Python builtin print documentation
+    :param file:            Print argument. Please refer to Python builtin print documentation
+    :param end:             Print argument. Please refer to Python builtin print documentation
+    :param sep:             Print argument. Please refer to Python builtin print documentation
     :return:
     """
-    print(color, *args, bcolors.ENDC)
+    print(color, *args, bcolors.ENDC, sep=sep, end=end, flush=flush)
 
 
 def fprint(path, *args):

@@ -6,8 +6,8 @@ from enum import Enum
 def UniformWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs):
     """Sets weight as Uniform Distribution Realizations. Pass 'min_val' and 'max_val' in kwargs to define boundaries"""
     SetRandomEdgeWeightsByLambda(graph,
-                                 lambda: random.random() * (kwargs["max_val"] - kwargs["min_val"]) + kwargs["min_val"],
-                                 attribute=attribute, force=force)
+                                 lambda arg: random.random() * (arg["max_val"] - arg["min_val"]) + arg["min_val"],
+                                 attribute=attribute, force=force, **kwargs)
 
 
 def InDegreeWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs):
@@ -21,7 +21,7 @@ def InDegreeWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs
 
 def GaussWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs):
     """Sets weight as Gauss Distribution Realizations. Pass 'mu' and 'sigma' in kwargs to define the distribution"""
-    SetRandomEdgeWeightsByLambda(graph, lambda: random.gauss(kwargs["mu"], kwargs["sigma"]), attribute=attribute, force=force)
+    SetRandomEdgeWeightsByLambda(graph, lambda arg: random.gauss(arg["mu"], arg["sigma"]), attribute=attribute, force=force, **kwargs)
 
 
 def SetRandomEdgeWeightsByLambda(graph: nx.DiGraph, Lambda, attribute="weight", force=False, **kwargs):
@@ -33,7 +33,7 @@ def SetRandomEdgeWeightsByLambda(graph: nx.DiGraph, Lambda, attribute="weight", 
                             A function or a lambda can be passed as argument
     :param force            If True, then all edge weights are assigned, otherwise, only the edges that do not have the
                             attribute set will have their weights set
-    :param args             Args for the lambda function
+    :param kwargs           Args for the lambda function
     :return:                A Graph in which the attribute "attribute" is randomized
     """
     for u, v, data in graph.edges(data=True):

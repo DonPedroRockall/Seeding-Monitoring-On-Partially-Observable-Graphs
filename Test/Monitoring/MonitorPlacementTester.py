@@ -1,3 +1,5 @@
+import sys
+
 from joblib import delayed, Parallel
 from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors
 from Monitoring.MonitorPlacement.Monitor import PlaceMonitors
@@ -125,8 +127,8 @@ class MonitorTester:
                   f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
             return
 
-            raise ValueError(f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
-                             f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
+            # raise ValueError(f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
+            #                  f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
 
         sources = list(random.sample(valid_nodes, self.NUM_SOURCES))
         for src in sources:
@@ -158,54 +160,12 @@ class MonitorTester:
         ic_full_recv = IndependentCascadeWithMonitors(full, sources, monitors_recv, 100)
 
         # Print either to file or to stdout
-        if self.PRINT_TO_FILE is None:
-            self.print_to_stdout(full, part, recv, sources, targets, monitors_full, monitors_part, monitors_recv,
-                                 ic_full_full, ic_full_part, ic_recv_recv, ic_full_recv)
-        else:
-            self.print_to_file(self.PRINT_TO_FILE, full, part, recv, sources, targets, monitors_full, monitors_part,
-                               monitors_recv, ic_full_full, ic_full_part, ic_recv_recv, ic_full_recv)
+        self.print_to_file(sys.stdout if self.PRINT_TO_FILE is None else open(self.PRINT_TO_FILE, "a+"),
+                           full, part, recv, sources, targets, monitors_full, monitors_part,
+                           monitors_recv, ic_full_full, ic_full_part, ic_recv_recv, ic_full_recv)
 
         # Return the monitors for eventual further processing
         return monitors_full, monitors_part, monitors_recv
-
-    def print_to_stdout(self, full, part, recv, sources, targets, monitors_full, monitors_part, monitors_recv,
-                        ic_full_full, ic_full_part, ic_recv_recv, ic_full_recv):
-
-        number_of_recovered_nodes = recv.number_of_nodes() - part.number_of_nodes()
-        number_of_hidden_nodes = full.number_of_nodes() - part.number_of_nodes()
-
-        # Print the results in a nice way
-        cprint(bcolors.HEADER, "== MONITOR TEST REPORT ==\n")
-
-        cprint(bcolors.BOLD, "-- General Information --")
-        print(len(sources), "sources:", sources)
-        print(len(targets), "targets:", targets)
-        print("Hidden Nodes:", number_of_hidden_nodes)
-        print("Recovered Nodes:", number_of_recovered_nodes, "\n")
-
-        cprint(bcolors.BOLD, "-- General Graph Information --")
-        print("Full graph:\n", full.number_of_nodes(), "nodes\n", full.number_of_edges(), "edges\n")
-        print("Part graph:\n", part.number_of_nodes(), "nodes\n", part.number_of_edges(), "edges\n")
-        print("Recv graph:\n", recv.number_of_nodes(), "nodes\n", recv.number_of_edges(), "edges\n")
-
-        print("Generation Function:", self.GENERATION.value["name"])
-        print("Hiding Function:", self.DISTRIBUTION.value["name"])
-        print("Weight Function:", self.WEIGHT.value["name"], "with parameters:", str(self.WEIGHT_KWARGS))
-        print("Closure Function:", self.CLOSURE.value["name"], "\n")
-
-        cprint(bcolors.BOLD, "-- Full Monitors on Full Graph --")
-        InterpretCascadeResults(ic_full_full, full, sources, targets, monitors_full, path=None)
-
-        cprint(bcolors.BOLD, "-- Part Monitors on Full Graph --")
-        InterpretCascadeResults(ic_full_part, full, sources, targets, monitors_part, path=None)
-
-        cprint(bcolors.BOLD, "-- Recv Monitors on Recv Graph --")
-        InterpretCascadeResults(ic_recv_recv, recv, sources, targets, monitors_recv, path=None)
-
-        cprint(bcolors.BOLD, "-- Recv Monitors on Full Graph --")
-        InterpretCascadeResults(ic_full_recv, full, sources, targets, monitors_recv, path=None)
-
-        cprint(bcolors.OKBLUE, "==============================================================")
 
     def print_to_file(self, path, full, part, recv, sources, targets, monitors_full, monitors_part, monitors_recv,
                       ic_full_full, ic_full_part, ic_recv_recv, ic_full_recv):
@@ -214,37 +174,38 @@ class MonitorTester:
         number_of_hidden_nodes = full.number_of_nodes() - part.number_of_nodes()
 
         # Print the results in a nice way
-        fprint(path, "== MONITOR TEST REPORT ==\n")
+        print("== MONITOR TEST REPORT ==\n", file=path)
 
-        fprint(path, "-- General Information --")
-        fprint(path, len(sources), "sources:", sources)
-        fprint(path, len(targets), "targets:", targets)
-        fprint(path, "Hidden Nodes:", number_of_hidden_nodes)
-        fprint(path, "Recovered Nodes:", number_of_recovered_nodes, "\n")
+        print("-- General Information --", file=path)
+        print(len(sources), "sources:", sources, file=path)
+        print(len(targets), "targets:", targets, file=path)
+        print("Hidden Nodes:", number_of_hidden_nodes, file=path)
+        print("Recovered Nodes:", number_of_recovered_nodes, "\n", file=path)
 
-        fprint(path, "-- General Graph Information --")
-        fprint(path, "Full graph:\n", full.number_of_nodes(), "nodes\n", full.number_of_edges(), "edges\n")
-        fprint(path, "Part graph:\n", part.number_of_nodes(), "nodes\n", part.number_of_edges(), "edges\n")
-        fprint(path, "Recv graph:\n", recv.number_of_nodes(), "nodes\n", recv.number_of_edges(), "edges\n")
+        print("-- General Graph Information --", file=path)
+        print("Full graph:\n", full.number_of_nodes(), "nodes\n", full.number_of_edges(), "edges\n", file=path)
+        print("Part graph:\n", part.number_of_nodes(), "nodes\n", part.number_of_edges(), "edges\n", file=path)
+        print("Recv graph:\n", recv.number_of_nodes(), "nodes\n", recv.number_of_edges(), "edges\n", file=path)
 
-        fprint(path, "Generation Function:", self.GENERATION.value["name"])
-        fprint(path, "Hiding Function:", self.DISTRIBUTION.value["name"])
-        fprint(path, "Weight Function:", self.WEIGHT.value["name"], "with parameters:", str(self.WEIGHT_KWARGS))
-        fprint(path, "Closure Function:", self.CLOSURE.value["name"], "\n")
+        print("Generation Function:", self.GENERATION.value["name"], file=path)
+        print("Hiding Function:", self.DISTRIBUTION.value["name"], file=path)
+        print("Weight Function:", self.WEIGHT.value["name"], "with parameters:", str(self.WEIGHT_KWARGS), file=path)
+        print("Closure Function:", self.CLOSURE.value["name"], "\n", file=path)
 
-        fprint(path, "-- Full Monitors on Full Graph --")
-        InterpretCascadeResults(ic_full_full, full, sources, targets, monitors_full, path=path)
+        print("-- Full Monitors on Full Graph --", file=path)
+        InterpretCascadeResults(ic_full_full, full, sources, targets, monitors_full, file=path)
 
-        fprint(path, "-- Part Monitors on Full Graph --")
-        InterpretCascadeResults(ic_full_part, full, sources, targets, monitors_part, path=path)
+        print("-- Part Monitors on Full Graph --", file=path)
+        InterpretCascadeResults(ic_full_part, full, sources, targets, monitors_part, file=path)
 
-        fprint(path, "-- Recv Monitors on Recv Graph --")
-        InterpretCascadeResults(ic_recv_recv, recv, sources, targets, monitors_recv, path=path)
+        print("-- Recv Monitors on Recv Graph --", file=path)
+        InterpretCascadeResults(ic_recv_recv, recv, sources, targets, monitors_recv, file=path)
 
-        fprint(path, "-- Recv Monitors on Full Graph --")
-        InterpretCascadeResults(ic_full_recv, full, sources, targets, monitors_recv, path=path)
+        print("-- Recv Monitors on Full Graph --", file=path)
+        InterpretCascadeResults(ic_full_recv, full, sources, targets, monitors_recv, file=path)
 
-        fprint(path, "==============================================================")
+        print("==============================================================", file=path)
+        path.close()
 
 
 ########################################################################################################################
@@ -274,6 +235,7 @@ def single_test(**kwargs):
 
 
 if __name__ == "__main__":
+
     """
     NUM_NODES = [1000]
     NUM_SOURCES = [10, 20, 50, 100]
@@ -288,22 +250,23 @@ if __name__ == "__main__":
     # This is the variable hyperparameter. The test will parallelize N runs of the algorithm, once for each
     # value in the list below. This helps finding a "threshold" where more that X% of hidden will make the
     # Graph Recovery meaningless (e.g. too few nodes to perform inference from)
-    NUM_TO_HIDE = [50, 100, 200, 250, 350, 500, 650, 750, 800, 900]
+    # NUM_TO_HIDE = [50, 100, 200, 250, 350, 500, 650, 750, 800, 900]
+    NUM_TO_HIDE = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     # Control this dictionary to set the hyperparameters of the algorithm for testing. Do not change the code
     # within the Parallel statement below, as it ensures consistency between graph analysis and report filenames
     fixed_hyperparameters = {
-        "num_nodes": 1000,
+        "num_nodes": 150,
         "num_sources": 10,
         "num_targets": 10,
-        "generation": EGraphGenerationFunction.ECorePeripheryDirectedGraph,
+        "generation": EGraphGenerationFunction.ERandomSparseDirectedGraph,
         "generation_kwargs": {},
         "distribution": ENodeHidingSelectionFunction.EDegreeDistribution,
         "distribution_kwargs": {},
-        "closure": EClosureFunction.ECrawlerClosure,
+        "closure": EClosureFunction.ETotalClosure,
         "closure_kwargs": {},
-        "weight": EWeightSetterFunction.EInDegreeWeights,
-        "weight_kwargs": {}
+        "weight": EWeightSetterFunction.EUniformWeights,
+        "weight_kwargs": {"min_val": 0, "max_val":0.1}
     }
 
     # Main call for parallelization. Do not change code below this line

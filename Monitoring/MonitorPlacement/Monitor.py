@@ -4,19 +4,34 @@ import networkx
 from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors
 from Monitoring.MonitorPlacement.EfficientAlgorithm import eAlgorithm
 from Monitoring.MonitorPlacement.MinimumMonitorSetConstruction import MMSC, N_delta
-from Monitoring.MonitorPlacement.MonitorUtility import SourceContraction
+from Monitoring.MonitorPlacement.MonitorUtility import ContractGraph
 from Common.ColorPrints import *
 from Common.DrawGraph import DrawGraph
 from Test.Common.GraphGenerator import RandomConnectedDirectedGraph
 
 
 def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=100, virtual_set=[], verbose=False):
+    """
+    Main Monitor Placement Algorithm
+    :param graph:
+    :param sources:
+    :param targets:
+    :param delta:
+    :param tau:
+    :param cascade_iterations:
+    :param virtual_set:
+    :param verbose:
+    :return:
+    """
     if verbose:
         cprint(bcolors.OKGREEN, "Number of Sources =", len(sources))
         cprint(bcolors.OKGREEN, "SOURCES =", sources)
         cprint(bcolors.OKGREEN, "TARGET =", targets)
 
-    G_contracted, c_source, c_target = SourceContraction(graph.copy(), sources, targets)
+    # G_contracted, c_source, c_target = SourceContraction(graph.copy(), sources, targets)
+
+    G_contracted, c_source = ContractGraph(graph.copy(), sources)
+    G_contracted, c_target = ContractGraph(G_contracted.copy(), targets)
 
     G_m_test_contracted = G_contracted.copy()
 
@@ -36,7 +51,8 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
         for sublist in ic:
             Infected_set = Infected_set.union(sublist)
         total_nodes += len(Infected_set)
-    c_nodes = total_nodes / cascade_iterations
+        c_nodes = total_nodes / cascade_iterations
+
 
     if verbose:
         cprint(bcolors.OKGREEN, "\nAVG " + str(cascade_iterations) + " CASCADE: Number of Infected = [", c_nodes, "]\n")
@@ -48,11 +64,6 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
         cprint(bcolors.OKGREEN, "Max number of infected nodes =", inf)
 
     return m2, inf
-
-
-def TestMonitorsSynthetic(full, part, recv, monitors, cascade_iterations, virtual_set, verbose=False):
-    if verbose:
-        cprint(bcolors.OKGREEN, "Number of Sources =", len(sources))
 
 
 if __name__ == "__main__":

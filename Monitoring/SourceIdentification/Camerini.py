@@ -7,7 +7,12 @@ import string
 import sys
 
 
-class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
+def random_string(L=15, seed=None):
+    random.seed(seed)
+    return ''.join([random.choice(string.ascii_letters) for _ in range(L)])
+
+
+class MultiDiGraphEdgeKey(nx.MultiDiGraph):
     """
     MultiDiGraph which assigns unique keys to every edge.
 
@@ -20,7 +25,7 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
 
     """
     def __init__(self, data=None, **attr):
-        cls = super(MultiDiGraph_EdgeKey, self)
+        cls = super(MultiDiGraphEdgeKey, self)
         cls.__init__(data=data, **attr)
 
         self._cls = cls
@@ -28,10 +33,10 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
 
     def remove_node(self, n):
         keys = set([])
-        for keydict in self.pred[n].values():
-            keys.update(keydict)
-        for keydict in self.succ[n].values():
-            keys.update(keydict)
+        for key_dict in self.pred[n].values():
+            keys.update(key_dict)
+        for key_dict in self.succ[n].values():
+            keys.update(key_dict)
 
         for key in keys:
             del self.edge_index[key]
@@ -71,12 +76,7 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
         raise NotImplementedError
 
 
-def random_string(L=15, seed=None):
-    random.seed(seed)
-    return ''.join([random.choice(string.ascii_letters) for n in range(L)])
-
-
-class CameriniAlgorithm():
+class CameriniAlgorithm:
 
     def __init__(self, graph, Y=nx.DiGraph(), Z=nx.DiGraph(), attr='weight'):
         self.original_graph = graph
@@ -85,7 +85,7 @@ class CameriniAlgorithm():
         self.template = random_string()
 
     def _init(self, graph=None, Y=nx.DiGraph(), Z=nx.DiGraph()):
-        self.graph = MultiDiGraph_EdgeKey()
+        self.graph = MultiDiGraphEdgeKey()
 
         if graph is None:
             graph = self.original_graph
@@ -123,7 +123,7 @@ class CameriniAlgorithm():
 
             for u, v, key, data in list(graph.in_edges([node], data=True, keys=True)):
                 if u in cycle:
-                    # it will be delete later
+                    # it will be deleted later
                     continue
                 graph.remove_edge_with_key(key)
                 dd = data.copy()
@@ -381,7 +381,6 @@ class CameriniAlgorithm():
             scores = {}
             if len(subgraphs) >= k:
                 for subgraph in subgraphs:
-                    print("@384", subgraph.number_of_nodes())
                     if subgraph.size() == 0:
                         root_ = list(subgraph.nodes())[0]
                         scores[root_] = {'score': 0, 'arborescence': nx.DiGraph()}
@@ -476,8 +475,8 @@ class CameriniAlgorithm():
             print('Roots in branching', roots)
             if len(roots) == 0:
                 raise Exception('No roots found!')
-            if len(roots) <= k and not(scores):
-                return [(root, {'score': 0, 'arborescence': nx.DiGraph()}) for root in roots]
+            if len(roots) <= k and not scores:
+                return [root for root in roots]
 
             scores = {root: {'score': None, 'arborescence': nx.DiGraph()} for root in roots}
             for root in scores:

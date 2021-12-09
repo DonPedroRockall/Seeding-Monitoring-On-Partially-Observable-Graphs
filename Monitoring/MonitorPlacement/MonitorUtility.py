@@ -1,16 +1,28 @@
-import copy
 import operator
 import random
+import sys
 import networkx
 
-from Common.ColorPrints import fprint
 
+def ContractGraph(graph: networkx.DiGraph, nodes: list):
+    """
+    Contracts a weighted graph in the following way:
+    - For every edge not involved in the contraction, the edge weight stays the same
+    - For every edge from contracted -> other node,
 
-def contractGraph(graph: networkx.DiGraph, nodes: list, new_label="super"):
+    - For edges between nodes to contract, they are removed
+    Reference:
+    Amoruso M., Anello D., Auletta V., Cerulli R., Ferraioli D., Raiconi A., "Contrasting the Spread of Misinformation
+    in Online Social Networks", p9-10
+    :param graph:       Input graph on which to perform the contraction
+    :param nodes:       The nodes to contract
+    :return:            The contracted graph and the resulting contracted node
+    """
     super_out = dict()
     super_in = dict()
     in_edges = []
     out_edges = []
+    new_label = nodes[0]
 
     for x in nodes:
         for out_node in graph.neighbors(x):
@@ -56,41 +68,7 @@ def contractGraph(graph: networkx.DiGraph, nodes: list, new_label="super"):
         else:
             graph.add_edge(key, new_label, weight=super_in[key][0][1])
 
-    return graph
-
-
-def SourceContraction(graph: networkx.DiGraph, sources: list, targets: list):
-    """
-    Performs Graph Contraction by contracting all sources into one node, and all targets into another node
-    :param graph:       Graph on which to perform the contraction
-    :param sources:     List of graph nodes that are considered the sources of misinformation to contract
-    :param targets:     List of graph nodes that have to be protected by the spread of mininformation
-    :return:            (Tuple, in order:) A Contracted graph, the source node and the target node
-    """
-    contracted_graph, contracted_source, contracted_target = graph, sources[0], targets[0]
-    if len(sources) > 1:
-        contracted_graph, contracted_source = ContractNodes(graph, sources, target_label="super_source")
-    if len(targets) > 1:
-        contracted_graph, contracted_target = ContractNodes(contracted_graph, targets, target_label="super_target")
-    return contracted_graph, contracted_source, contracted_target
-
-
-def ContractNodes(graph: networkx.DiGraph, to_contract: list, target_label="super"):
-    """
-    Contracts a list of nodes into a single node, removing self loops and preserving the graph input parameter
-    :param graph:           Graph on where the contraction should take place
-    :param to_contract:     List of nodes to be contracted
-    :return:                The Contracted Graph
-    """
-    contracted_graph: networkx.DiGraph = copy.copy(graph)
-    if len(to_contract) < 2:
-        return graph
-    init_node = to_contract[0]
-    for x in range(len(to_contract)):
-        if init_node != to_contract[x]:
-            networkx.contracted_nodes(contracted_graph, init_node, to_contract[x], self_loops=False, copy=False)
-    networkx.relabel_nodes(graph, {init_node: target_label})
-    return contracted_graph, init_node
+    return graph, new_label
 
 
 def select_ss_r(G: networkx.DiGraph, ns):
@@ -142,7 +120,7 @@ def select_ss_r(G: networkx.DiGraph, ns):
     return sources, target
 
 
-def InterpretCascadeResults(ic_results, graph, source, targets, monitors, path=None):
+def InterpretCascadeResults(ic_results, graph, source, targets, monitors, file=sys.stdout):
     """
     Transforms the Independent Cascade results in more readable metrics. Can print on std output or on file
     :param monitors:            The set of monitors for a specific graph
@@ -150,7 +128,7 @@ def InterpretCascadeResults(ic_results, graph, source, targets, monitors, path=N
     :param source:              The set of sources
     :param graph:               The graph itself
     :param ic_results:          The results of the independent cascade
-    :param path:                Where to write the results. If path is None, then this will print in std out
+    :param file:                Where to write the results. If path is None, then this will print in std out
     """
     num_of_infected = 0
     num_of_non_source_infected = 0
@@ -167,26 +145,13 @@ def InterpretCascadeResults(ic_results, graph, source, targets, monitors, path=N
                 num_of_infected_targets += 1
             num_of_infected += 1
 
-    if path is not None:
-        fprint(path, "Number of Total infected nodes:", num_of_infected, "(", num_of_infected / num_of_nodes * 100,
-               "% of total nodes)")
-        fprint(path, "Number of Non-Source nodes infected:", num_of_non_source_infected, "(",
-               num_of_non_source_infected / num_of_nodes * 100, "% of total nodes)")
-        fprint(path, "Number of Infected Targets:", num_of_infected_targets, "(",
-               num_of_infected_targets / num_of_nodes * 100,
-               "% of total nodes)",
-               num_of_infected_targets / len(targets) * 100, "% of total targets)")
-        fprint(path, "Number of monitors:", num_of_monitors, "(", num_of_monitors / num_of_nodes * 100,
-               "% of total nodes)")
-        fprint(path, "Independent Cascade ran for", num_of_iterations, "iterations\n")
-
-    else:
-        print("Number of Total infected nodes:", num_of_infected, "(", num_of_infected / num_of_nodes * 100,
-              "% of total nodes)")
-        print("Number of Non-Source nodes infected:", num_of_non_source_infected, "(",
-              num_of_non_source_infected / num_of_nodes * 100, "% of total nodes)")
-        print("Number of Infected Targets:", num_of_infected_targets, "(", num_of_infected_targets / num_of_nodes * 100,
-              "% of total nodes)",
-              num_of_infected_targets / len(targets) * 100, "% of total targets)")
-        print("Number of monitors:", num_of_monitors, "(", num_of_monitors / num_of_nodes * 100, "% of total nodes)")
-        print("Independent Cascade ran for", num_of_iterations, "iterations\n")
+    print("Number of Total infected nodes:", num_of_infected, "(", num_of_infected / num_of_nodes * 100,
+          "% of total nodes)", file=file)
+    print("Number of Non-Source nodes infected:", num_of_non_source_infected, "(",
+          num_of_non_source_infected / num_of_nodes * 100, "% of total nodes)", file=file)
+    print("Number of Infected Targets:", num_of_infected_targets, "(",
+          num_of_infected_targets / num_of_nodes * 100, "% of total nodes)",
+          num_of_infected_targets / len(targets) * 100, "% of total targets)", file=file)
+    print("Number of monitors:", num_of_monitors, "(", num_of_monitors / num_of_nodes * 100,
+          "% of total nodes)", file=file)
+    print("Independent Cascade ran for", num_of_iterations, "iterations\n", file=file)

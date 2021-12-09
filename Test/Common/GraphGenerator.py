@@ -29,10 +29,14 @@ def GNCConnectedDirectedGraph(num_nodes, **kwargs):
     Generates a GNC random directed graph using networkx, and checks its connectivity
     This function continuously adds edges in batches until the graph has reached strong connectivity
     :param num_nodes:           Number of nodes
-    :param batch:               Number of edges to add if the graph is not strongly connected
+    :param kwargs:              Keyword argument to pass to the generation function
+     - batch:                   Number of edges to add if the graph is not strongly connected. Defaults to 5
     :return:
     """
     graph = nx.generators.gnc_graph(num_nodes, create_using=nx.DiGraph)
+
+    if kwargs is None or "batch" not in kwargs:
+        kwargs = {"batch": 5}
 
     while not nx.is_strongly_connected(graph):
         u = random.choice(list(graph.nodes()))
@@ -76,6 +80,45 @@ def CorePeripheryDirectedGraph(min_num_nodes, **kwargs):
     return networkx.convert_matrix.from_numpy_array(A, create_using=networkx.DiGraph)
 
 
+def RandomSparseDirectedGraph(num_nodes, **kwargs):
+    """
+    Generates a graph that is sparse, that is, the nodes have a maximum degree
+    :param num_nodes:           Number of nodes of the graph
+    :param kwargs:              Keyword argument for this function
+                                - minimum_in_degree: int -> maximum number of edges having a node N as target [default 2]
+                                - maximum_in_degree: int -> maximum number of edges having a node N as target [default 10]
+                                - minimum_out_degree: int -> maximum number of edges having a node N as source [default 2]
+                                - maximum_out_degree: int -> maximum number of edges having a node N as source [default 10]
+    :return:
+    """
+
+    max_in_deg = 10 if kwargs is None or "maximum_in_degree" not in kwargs else kwargs["maximum_in_degree"]
+    max_out_deg = 10 if kwargs is None or "maximum_out_degree" not in kwargs else kwargs["maximum_out_degree"]
+    min_in_deg = 2 if kwargs is None or "minimum_in_degree" not in kwargs else kwargs["minimum_in_degree"]
+    min_out_deg = 2 if kwargs is None or "minimum_out_degree" not in kwargs else kwargs["minimum_out_degree"]
+    graph = networkx.DiGraph()
+    graph.add_nodes_from(range(num_nodes))
+
+    # Iterate over each node
+    for node in graph.nodes():
+
+        # Add a random number of out edges between min_out_deg to max_out_deg
+        k_in = random.randint(min_out_deg, max_out_deg)
+        while graph.out_degree(node) < k_in:
+            new_node = random.choice(list(graph.nodes()))
+            if new_node != node and graph.in_degree(new_node) < max_in_deg:
+                graph.add_edge(node, new_node)
+
+        # Add a random number of in edges between min_in_deg to max_in_deg
+        k_out = random.randint(min_in_deg, max_in_deg)
+        while graph.in_degree(node) < k_out:
+            new_node = random.choice(list(graph.nodes()))
+            if new_node != node and graph.out_degree(new_node) < max_out_deg:
+                graph.add_edge(new_node, node)
+
+    return graph
+
+
 class EGraphGenerationFunction(Enum):
     ERandomConnectedDirectedGraph = {"name": "Random Connected graph", "function": RandomConnectedDirectedGraph,
                                      "short_name": "RND"}
@@ -83,3 +126,5 @@ class EGraphGenerationFunction(Enum):
                                   "short_name": "GNC"}
     ECorePeripheryDirectedGraph = {"name": "Core-Periphery graph", "function": CorePeripheryDirectedGraph,
                                    "short_name": "C-P"}
+    ERandomSparseDirectedGraph = {"name": "Sparse Directed Graph", "function": RandomConnectedDirectedGraph,
+                                 "short_name": "SDG"}

@@ -11,7 +11,7 @@ def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=Non
     :param N0:              Dimension of the Kronecker initiator matrix
     :param alpha:           Parameter used for Katz centrality
     :param beta:            Parameter used for Katz centrality
-    :param epsilon:         Minimum value of Katz centrality that a node has to have to be considered influential
+    :param epsilon:         Minimum value of influential centrality that a node has to have to be considered influential
     :param centrality:      The Centrality Measure to use. Options: "katz", "deg". Defaults to "deg" (Degree centrality)
     :return:                A Graph with the recovered nodes connected to it and how many nodes have been connected
     """

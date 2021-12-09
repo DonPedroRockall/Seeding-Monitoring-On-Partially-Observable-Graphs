@@ -78,7 +78,8 @@ def KronFit(graph: DiGraph, n0, theta: numpy.array = None, gd_iterations=None, l
 
     # Remove leftover files
     os.remove(path + "-fit" + str(n0))
-    os.remove(path + ext)
+    if os.path.exists(path + ext):
+        os.remove(path + ext)
 
     return theta_final
 

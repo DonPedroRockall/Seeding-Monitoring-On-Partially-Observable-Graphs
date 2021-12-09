@@ -3,6 +3,8 @@ import networkx
 from queue import Queue
 from enum import Enum
 
+from Common.ColorPrints import cprint, bcolors
+
 
 def TotalNodeClosure(graph: networkx.DiGraph, nodes_to_hide: list, **kwargs):
     """Removes all the edges from the graph that are incident to each node in nodes_to_hide parameter"""
@@ -29,15 +31,26 @@ def CrawlerClosure(graph: networkx.DiGraph, nodes_to_hide: list, **kwargs):
     """Marks nodes as "to_remove" without removing them, and then performs a crawling over the graph from a starting
     node to simulate a real scenario.
     kwargs:
-        "start_node" -> <node>: the starting node for the crawling. Must be a node of the graph, raises AttributeError otherwise
-    if kwargs is None or empty, then a random node from the largest connected component is chosen
+        "start_node" -> <node>:             the starting node for the crawling. Must be a node of the graph, raises
+        AttributeError otherwise if kwargs is None or empty, then a random node from the largest connected component is chosen
     """
 
     if kwargs is None or "starting_node" not in kwargs:
         list_cc = list(networkx.strongly_connected_components(graph))
         list_cc.sort(key=len, reverse=True)
-        largest_cc = list_cc[0]
-        start_node = random.choice(list(set(largest_cc).difference(set(nodes_to_hide))))
+        start_node = None
+
+        # Find the largest connected component that has at least one valid node to be chosen as crawler starting node
+        for connected_component in list_cc:
+            possible_choices = list(set(connected_component).difference(set(nodes_to_hide)))
+            if len(possible_choices) > 0:
+                start_node = random.choice(possible_choices)
+                break
+
+        if start_node is None:
+            cprint(bcolors.FAIL, "Failed to perform crawling. There is no partition that has at least one non-hidden "
+                                 "node, thus crawling could not be started")
+
     else:
         start_node = kwargs["starting_node"]
 
