@@ -120,38 +120,53 @@ def select_ss_r(G: networkx.DiGraph, ns):
     return sources, target
 
 
-def InterpretCascadeResults(ic_results, graph, source, targets, monitors, file=sys.stdout):
+def GatherCascadeResults(ic_results, graph, sources, targets, monitors):
     """
     Transforms the Independent Cascade results in more readable metrics. Can print on std output or on file
     :param monitors:            The set of monitors for a specific graph
     :param targets:             The set of targets
-    :param source:              The set of sources
+    :param sources:             The set of sources
     :param graph:               The graph itself
     :param ic_results:          The results of the independent cascade
-    :param file:                Where to write the results. If path is None, then this will print in std out
+    :return                     A dict of string -> result for the cascade
     """
-    num_of_infected = 0
-    num_of_non_source_infected = 0
-    num_of_infected_targets = 0
-    num_of_iterations = len(ic_results) - 1 if ic_results[-1] == [] else len(ic_results)
-    num_of_monitors = len(monitors)
-    num_of_nodes = graph.number_of_nodes()
+
+    results = {"num_of_infected": 0,
+               "num_of_non_source_infected": 0,
+               "num_of_infected_targets": 0,
+               "num_of_iterations": len(ic_results) - 1 if ic_results[-1] == [] else len(ic_results),
+               "num_of_monitors": len(monitors),
+               "num_of_nodes": graph.number_of_nodes(),
+               "num_targets": len(targets),
+               "num_sources": len(sources)
+               }
 
     for iteration in ic_results:
         for node in iteration:
-            if node not in source:
-                num_of_non_source_infected += 1
+            if node not in sources:
+                results["num_of_non_source_infected"] += 1
             if node in targets:
-                num_of_infected_targets += 1
-            num_of_infected += 1
+                results["num_of_infected_targets"] += 1
+            results["num_of_infected"] += 1
 
-    print("Number of Total infected nodes:", num_of_infected, "(", num_of_infected / num_of_nodes * 100,
-          "% of total nodes)", file=file)
-    print("Number of Non-Source nodes infected:", num_of_non_source_infected, "(",
-          num_of_non_source_infected / num_of_nodes * 100, "% of total nodes)", file=file)
-    print("Number of Infected Targets:", num_of_infected_targets, "(",
-          num_of_infected_targets / num_of_nodes * 100, "% of total nodes)",
-          num_of_infected_targets / len(targets) * 100, "% of total targets)", file=file)
-    print("Number of monitors:", num_of_monitors, "(", num_of_monitors / num_of_nodes * 100,
-          "% of total nodes)", file=file)
-    print("Independent Cascade ran for", num_of_iterations, "iterations\n", file=file)
+    return results
+
+
+def PrintCascadeResults(n_nodes, n_inf, ns_inf, n_inf_t, n_t, n_mon, c_iter, file=sys.stdout):
+    """
+    Prints the results of an independent cascade execution in a fancy way, to stdout or on file
+    :param n_nodes:             Number of nodes of the graph
+    :param n_inf:               Number of infected nodes
+    :param ns_inf:              Number of non-source infected
+    :param n_inf_t:             Number of infected targets
+    :param n_t:                 Number of targets
+    :param n_mon:               Number of monitors
+    :param c_iter:              Number of cascade iterations
+    :param file:                Where to write the results. If path is None, then this will print in std out
+    """
+
+    print(f"Number of Total infected nodes: {n_inf} ({n_inf / n_nodes * 100} % of total nodes)", file=file)
+    print(f"Number of Non-Source nodes infected: {ns_inf} ({ns_inf / n_nodes * 100} % of total nodes)", file=file)
+    print(f"Number of Infected Targets: {n_inf_t} ({n_inf_t / n_nodes * 100} % of total nodes; {n_inf_t / n_t * 100} % of total targets)", file=file)
+    print(f"Number of monitors: {n_mon} ({n_mon / n_nodes * 100} % of total nodes)", file=file)
+    print(f"Independent Cascade ran for {c_iter} iterations\n", file=file)

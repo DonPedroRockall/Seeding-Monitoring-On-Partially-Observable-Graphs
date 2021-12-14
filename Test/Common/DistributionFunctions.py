@@ -7,9 +7,10 @@ def DegreeDistribution(graph: networkx.Graph, nodes_to_hide: int, **kwargs):
     """Samples nodes to select for hiding based on the degree of the node.
     Nodes of the graph that have an higher degree centrality are more likely to be selected and hidden"""
     to_hide = list()
+    g_edges_cache = list(graph.edges())
     while len(to_hide) < nodes_to_hide:
-        random_edge = random.choice(list(graph.edges()))
-        node = random_edge[int(random.random())]
+        random_edge = random.choice(g_edges_cache)
+        node = random_edge[round(random.random())]
         if node not in to_hide:
             to_hide.append(node)
     return to_hide

@@ -1,7 +1,9 @@
 import networkx as nx
 
+from Common.ColorPrints import cprint, bcolors
 
-def GetVirtualNodesByLabel(part: nx.DiGraph, recv: nx.DiGraph):
+
+def GetVirtualNodesNodeDifference(part: nx.DiGraph, recv: nx.DiGraph):
     """
     Returns the set of virtual nodes. Virtual nodes are defined as the nodes that are present in recv graph but not in
     part graph. A node is present if it has the same label
@@ -14,10 +16,6 @@ def GetVirtualNodesByLabel(part: nx.DiGraph, recv: nx.DiGraph):
         if node not in part.nodes():
             virtuals.add(node)
     return virtuals
-
-
-def IsVirtualNode(node, virtual_set):
-    return node in virtual_set
 
 
 def SetSameWeightsToOtherGraphs(original_graph: nx.Graph, other_graphs: list):

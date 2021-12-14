@@ -17,18 +17,21 @@ def ReadGraphTriple(path, folder, index, graph_type=networkx.DiGraph):
 
     for filename in os.listdir(str(os.path.join(path, folder))):
         if filename.startswith("ind" + str(index) + "_FULL_"):
-            full_path = filename
+            full_path = os.path.join(path, folder, filename)
         elif filename.startswith("ind" + str(index) + "_PART_"):
-            part_path = filename
+            part_path = os.path.join(path, folder, filename)
         elif filename.startswith("ind" + str(index) + "_RECV_"):
-            recv_path = filename
+            recv_path = os.path.join(path, folder, filename)
 
     if full_path is None or part_path is None or recv_path is None:
         raise FileNotFoundError("Cannot find the graph files for the specified index")
 
-    full = networkx.read_edgelist(full_path, create_using=graph_type, nodetype=int)
-    part = networkx.read_edgelist(part_path, create_using=graph_type, nodetype=int)
-    recv = networkx.read_edgelist(recv_path, create_using=graph_type, nodetype=str)
+    # full = networkx.read_edgelist(full_path, create_using=graph_type, nodetype=int)
+    # part = networkx.read_edgelist(part_path, create_using=graph_type, nodetype=int)
+    # recv = networkx.read_edgelist(recv_path, create_using=graph_type, nodetype=str)
+    full = networkx.read_adjlist(full_path, create_using=graph_type, nodetype=int)
+    part = networkx.read_adjlist(part_path, create_using=graph_type, nodetype=int)
+    recv = networkx.read_adjlist(recv_path, create_using=graph_type, nodetype=str)
 
     # Convert the nodes of recv to int, except for the virtual nodes (that are names RECVX) that will remain strings
     mapping = {}
@@ -61,11 +64,11 @@ def WriteGraphTriple(path, folder, filename_template, full, part, recv):
             part_path = os.path.join(path, folder, "ind" + str(i) + "_PART_" + filename_template)
             recv_path = os.path.join(path, folder, "ind" + str(i) + "_RECV_" + filename_template)
 
-            networkx.write_edgelist(full, full_path)
-            networkx.write_edgelist(part, part_path)
-            networkx.write_edgelist(recv, recv_path)
+            # networkx.write_edgelist(full, full_path, data=False)
+            # networkx.write_edgelist(part, part_path, data=False)
+            # networkx.write_edgelist(recv, recv_path, data=False)
+            networkx.write_adjlist(full, full_path)
+            networkx.write_adjlist(part, part_path)
+            networkx.write_adjlist(recv, recv_path)
 
-            return
-
-
-
+            return i

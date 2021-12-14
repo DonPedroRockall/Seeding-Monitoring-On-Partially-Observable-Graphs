@@ -74,7 +74,7 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
 
     # Reconstruct the graph
     reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(
-        copy.copy(part_obs_graph.copy()), num_nodes_to_hide, N0=2, alpha=None, beta=None,
+        part_obs_graph.copy(), num_nodes_to_hide, N0=2, alpha=None, beta=None,
         epsilon=influential_threshold, centrality=influential_centrality)
 
     # Print out useful information that is not used in the process (nor returned by this function)

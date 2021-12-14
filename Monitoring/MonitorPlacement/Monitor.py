@@ -53,7 +53,6 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
         total_nodes += len(Infected_set)
         c_nodes = total_nodes / cascade_iterations
 
-
     if verbose:
         cprint(bcolors.OKGREEN, "\nAVG " + str(cascade_iterations) + " CASCADE: Number of Infected = [", c_nodes, "]\n")
 

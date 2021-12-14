@@ -9,7 +9,7 @@ from DiffusionModels.IndependentCascade import AdaptiveCascade, GetInfectedSubgr
     IndependentCascadeWithMonitors
 from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
 from Monitoring.MonitorPlacement.Monitor import PlaceMonitors
-from Monitoring.MonitorPlacement.MonitorUtility import InterpretCascadeResults
+from Monitoring.MonitorPlacement.MonitorUtility import PrintCascadeResults
 from Monitoring.SourceIdentification.SourceIdentificator import IdentifySources
 from Test.Common.DistributionFunctions import DegreeDistribution
 from Test.Common.GraphGenerator import GNCConnectedDirectedGraph
@@ -72,9 +72,9 @@ def single_test(inf_thresh, full, part, sources, targets):
     # get_accuracy(full, random_sources, est_sources)
     print(f"Monitors on {inf_thresh}", file=open(f"GRAPH_{inf_thresh}", "a+"))
     print("Nodes recovered:", recv.number_of_nodes() - part.number_of_nodes(), file=open(f"GRAPH_{inf_thresh}", "a+"))
-    monitors = PlaceMonitors(recv, sources, targets, cascade_iterations=100, verbose=True)
+    monitors, _ = PlaceMonitors(recv, sources, targets, cascade_iterations=100, verbose=True)
     ic_results = IndependentCascadeWithMonitors(full, sources, monitors, 100)
-    InterpretCascadeResults(ic_results, full, sources, targets, monitors, file=open(f"GRAPH_{inf_thresh}", "a+"))
+    PrintCascadeResults(ic_results, full, sources, targets, monitors, file=open(f"GRAPH_{inf_thresh}", "a+"))
 
 
 def test_inf_thresh():
@@ -136,14 +136,14 @@ def test_inf_thresh():
 
     # Execute monitor placement on full and part
     print("Monitors on full")
-    monitors_full = PlaceMonitors(full, sources, targets, cascade_iterations=100, verbose=True)
+    monitors_full, _ = PlaceMonitors(full, sources, targets, cascade_iterations=100, verbose=True)
     ic_full = IndependentCascadeWithMonitors(full, sources, monitors_full, 100)
-    InterpretCascadeResults(ic_full, full, sources, targets, monitors_full)
+    PrintCascadeResults(ic_full, full, sources, targets, monitors_full)
 
     print("Monitors on part")
-    monitors_part = PlaceMonitors(part, sources, targets, cascade_iterations=100, verbose=True)
+    monitors_part, _ = PlaceMonitors(part, sources, targets, cascade_iterations=100, verbose=True)
     ic_part = IndependentCascadeWithMonitors(part, sources, monitors_part, 100)
-    InterpretCascadeResults(ic_part, part, sources, targets, monitors_full)
+    PrintCascadeResults(ic_part, part, sources, targets, monitors_full)
 
     Parallel(n_jobs=6)(delayed(single_test)(th, full, part, sources, targets) for th in it_list)
 

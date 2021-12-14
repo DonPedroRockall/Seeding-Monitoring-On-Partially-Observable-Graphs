@@ -1,3 +1,5 @@
+import copy
+
 import networkx as nx
 from networkx.algorithms.flow import *
 from collections import deque
@@ -202,6 +204,7 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
         alfa += step
 
     cuts = computeCutset(Gc, S, T)
+    starting_cut = copy.copy(cuts)
 
     # Create a set with all the monitors that have been chosed because of "virtual reasons"
     virtual_monitors = set()
@@ -251,11 +254,19 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
                 remove_nodes_from_cutset(node for node in additional_monitors)
                 virtual_monitors = virtual_monitors.union(additional_monitors)
 
-        if verbose:
-            cprint(bcolors.OKCYAN, len(virtual_monitors), "Virtual Monitors:", virtual_monitors)
+
 
     # Perform the normal vertex cover on the remaining parts
     monitor_set = chooseMs(cuts, source, target)
+    if verbose:
+        for node in virtual_set:
+            if not str(node).startswith("RECV"):
+                cprint(bcolors.FAIL, "CUTS:", starting_cut)
+                cprint(bcolors.FAIL, "Virtual set:", virtual_set)
+                break
+
+        cprint(bcolors.OKCYAN, len(virtual_monitors), "Virtual Monitors:", virtual_monitors)
+        cprint(bcolors.OKCYAN, len(monitor_set), "Non-virtual monitors:", monitor_set)
     return monitor_set.union(virtual_monitors), len(S)
 
 

@@ -49,6 +49,19 @@ def GNCConnectedDirectedGraph(num_nodes, **kwargs):
     return graph
 
 
+def GNPRandomDirectedGraph(num_nodes, **kwargs):
+    """
+    Uses networkx to generate a fast GNP random graph in O(n + m), where n is the number of nodes and m the expected
+    number of edges (m ~ n * (n - 1))
+    :param num_nodes:
+    :param kwargs:
+    :return:
+    """
+    p = 0.25 if kwargs is None or "p" not in kwargs else kwargs["p"]
+    directed = 0.25 if kwargs is None or "directed" not in kwargs else kwargs["directed"]
+    return (networkx.generators.fast_gnp_random_graph(num_nodes, p, directed=directed)).to_directed()
+
+
 def CorePeripheryDirectedGraph(min_num_nodes, **kwargs):
     """
     Generates a directed graph with a Core-Periphery structure.
@@ -116,6 +129,8 @@ def RandomSparseDirectedGraph(num_nodes, **kwargs):
             if new_node != node and graph.out_degree(new_node) < max_out_deg:
                 graph.add_edge(new_node, node)
 
+    if not networkx.is_weakly_connected(graph):
+        print("WARNING: graph is not weakly connected")
     return graph
 
 
@@ -127,4 +142,6 @@ class EGraphGenerationFunction(Enum):
     ECorePeripheryDirectedGraph = {"name": "Core-Periphery graph", "function": CorePeripheryDirectedGraph,
                                    "short_name": "C-P"}
     ERandomSparseDirectedGraph = {"name": "Sparse Directed Graph", "function": RandomConnectedDirectedGraph,
-                                 "short_name": "SDG"}
+                                  "short_name": "SDG"}
+    EFastGNPRandomGraph = {"name": "GNP Random Graph", "function": GNPRandomDirectedGraph,
+                           "short_name": "GNP"}
