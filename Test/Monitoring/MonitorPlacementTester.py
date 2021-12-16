@@ -1,6 +1,8 @@
+import os
 import statistics
 import sys
 
+import networkx
 import numpy
 from joblib import delayed, Parallel
 
@@ -159,44 +161,16 @@ class MonitorTester:
 
         return full, part, recv
 
-    def test_real_dataset(self, path, directed, generate):
-        full = networkx.read_edgelist(path, create_using=networkx.DiGraph if directed else networkx.Graph)
-
-        if not generate:
-            part = networkx.read_edgelist(path[:-4] + "-PART.txt",
-                                          create_using=networkx.DiGraph if directed else networkx.Graph)
-            recv = networkx.read_edgelist(path[:-4] + "-RECV.txt",
-                                          create_using=networkx.DiGraph if directed else networkx.Graph)
-            self.perform_test(full, part, recv)
-            return
-
-        hiding_distr = UniformDistribution
-        if self.DISTRIBUTION == "deg":
-            hiding_distr = DegreeDistribution
-
-        closure_func = TotalNodeClosure
-        if self.CLOSURE == "Partial Closure":
-            closure_func = PartialNodeClosure
-
-        nth = hiding_distr(full, self.NUM_TO_HIDE)
-        # Hide a part of the nodes
-        part = closure_func(full, nth)
-
-        # Set influential treshold
-        influential_threshold = sum(deg for node, deg in part.degree() if deg > 0) / float(part.number_of_nodes())
-
-        # Reconstruct the graph
-        recv, nodes_recovered = InfluentialNodeRecovery(
-            part.copy(), self.NUM_TO_HIDE, N0=2, alpha=None, beta=None,
-            epsilon=influential_threshold, centrality="deg")
-
-        networkx.write_edgelist(part, ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote-PART.txt", data=False)
-        networkx.write_edgelist(recv, ROOT_DIR + "/Datasets/Real/Wiki-Vote/Wiki-Vote-RECV.txt", data=False)
-
-        self.perform_test(full, part, recv, nth)
+    def test_real_dataset(self, path):
+        full = networkx.read_edgelist(path, create_using=networkx.DiGraph, nodetype=int)
+        self.NUM_NODES = full.number_of_nodes()
+        nth = self.DISTRIBUTION.value["function"](full, self.NUM_TO_HIDE)
+        part = self.CLOSURE.value["function"](full.copy(), nth)
+        recv, _ = InfluentialNodeRecovery(part, self.NUM_TO_HIDE, 2)
+        return self.perform_test(full, part, recv)
 
     # TODO: remove nth
-    def perform_test(self, full, part, recv, nth=None):
+    def perform_test(self, full, part, recv):
 
         # Generate the weights for the full graph
         cprint(bcolors.OKGREEN, "Setting weights...")
@@ -509,41 +483,63 @@ def parallel_test_repeat(mt: MonitorTester):
 
 
 ########################################################################################################################
-# --- GENERATION TEST STARTING CODE ---
+# --- REAL DATASET TESTING ---
 ########################################################################################################################
 
 
-if __name__ == "__main__":
+def real_dataset_test():
     mt = MonitorTester()
     mt.TRIPLE_INDEX = -1
-    mt.NUM_NODES = 150
-    mt.NUM_TO_HIDE = 30
-    mt.NUM_SOURCES = 10
-    mt.NUM_TARGETS = 10
-    mt.GENERATION = EGraphGenerationFunction.ECorePeripheryDirectedGraph
+    mt.NUM_TO_HIDE = int(mt.NUM_NODES * 0.1)
+    mt.NUM_SOURCES = 20
+    mt.NUM_TARGETS = 20
+    mt.GENERATION = EGraphGenerationFunction.ERealGraph
     mt.GENERATION_KWARGS = {}
     mt.CLOSURE = EClosureFunction.ETotalClosure
     mt.CLOSURE_KWARGS = {}
-    mt.DISTRIBUTION = ENodeHidingSelectionFunction.EDegreeDistribution
+    mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
     mt.DISTRIBUTION_KWARGS = {}
     mt.WEIGHT = EWeightSetterFunction.EUniformWeights
-    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 1}
+    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
     mt.DATASET_PATH = ROOT_DIR + "/Datasets"
-    mt.FOLDER = "Synthetic"
+    mt.FOLDER = "Real"
     mt.PRINT_TO_FILE = None
     mt.TEST_PARAMS = ""
+    mt.test_real_dataset(os.path.join(mt.DATASET_PATH, "Real", "Wiki-Vote.txt"))
 
-    full, part, recv = GenerateRandomGraphTriple(
-        mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["function"], mt.GENERATION_KWARGS, mt.DISTRIBUTION.value["function"],
-        mt.DISTRIBUTION_KWARGS, mt.CLOSURE.value["function"], mt.CLOSURE_KWARGS, None, "deg", False)
 
-    index = WriteGraphTriple(mt.DATASET_PATH, mt.FOLDER, GenerateGraphFilename(
-            mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["short_name"],
-            mt.DISTRIBUTION.value["short_name"], mt.CLOSURE.value["short_name"],
-            mt.WEIGHT.value["short_name"]), full, part, recv)
-
-    mt.TRIPLE_INDEX = index
-
-    parallel_test_repeat(mt)
+if __name__ == "__main__":
+    real_dataset_test()
+    # mt = MonitorTester()
+    # mt.TRIPLE_INDEX = -1
+    # mt.NUM_NODES = 150
+    # mt.NUM_TO_HIDE = 100
+    # mt.NUM_SOURCES = 10
+    # mt.NUM_TARGETS = 10
+    # mt.GENERATION = EGraphGenerationFunction.ECorePeripheryDirectedGraph
+    # mt.GENERATION_KWARGS = {}
+    # mt.CLOSURE = EClosureFunction.ETotalClosure
+    # mt.CLOSURE_KWARGS = {}
+    # mt.DISTRIBUTION = ENodeHidingSelectionFunction.EDegreeDistribution
+    # mt.DISTRIBUTION_KWARGS = {}
+    # mt.WEIGHT = EWeightSetterFunction.EUniformWeights
+    # mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 1}
+    # mt.DATASET_PATH = ROOT_DIR + "/Datasets"
+    # mt.FOLDER = "Synthetic"
+    # mt.PRINT_TO_FILE = None
+    # mt.TEST_PARAMS = ""
+    #
+    # full, part, recv = GenerateRandomGraphTriple(
+    #     mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["function"], mt.GENERATION_KWARGS, mt.DISTRIBUTION.value["function"],
+    #     mt.DISTRIBUTION_KWARGS, mt.CLOSURE.value["function"], mt.CLOSURE_KWARGS, None, "deg", False)
+    #
+    # index = WriteGraphTriple(mt.DATASET_PATH, mt.FOLDER, GenerateGraphFilename(
+    #         mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["short_name"],
+    #         mt.DISTRIBUTION.value["short_name"], mt.CLOSURE.value["short_name"],
+    #         mt.WEIGHT.value["short_name"]), full, part, recv)
+    #
+    # mt.TRIPLE_INDEX = index
+    #
+    # parallel_test_repeat(mt)
 
 

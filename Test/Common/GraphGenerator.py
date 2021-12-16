@@ -145,3 +145,4 @@ class EGraphGenerationFunction(Enum):
                                   "short_name": "SDG"}
     EFastGNPRandomGraph = {"name": "GNP Random Graph", "function": GNPRandomDirectedGraph,
                            "short_name": "GNP"}
+    ERealGraph = {"name": "Real Graph", "function": None, "short_name": "NA"}

@@ -1,5 +1,6 @@
 import copy
 
+import networkx
 import networkx as nx
 from networkx.algorithms.flow import *
 from collections import deque
@@ -176,6 +177,30 @@ def virtualSubgraph(graph: nx.DiGraph, source_edge, virtual_set):
     return real_set
 
 
+def getVirtualSubgraph(graph: nx.DiGraph, source_edge, virtual_set):
+    # Prepare to return the real monitors
+    real_set = set()
+
+    # Start building the virtual edges
+    virtual_edges = []
+    for u, v in graph.edges():
+        if u in virtual_set or v in virtual_set:
+            virtual_edges.append((u, v))
+
+    virtual_graph = nx.DiGraph()
+    virtual_graph.add_edges_from(virtual_edges)
+
+    # Check if path exists from node to virtual edge
+    for node in virtual_graph.nodes():
+        if node not in virtual_set:
+            if networkx.has_path(virtual_graph, node, source_edge[0]) or networkx.has_path(virtual_graph, node, source_edge[1]):
+                real_set.add(node)
+
+    return real_set
+
+
+
+
 def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
     Gc = setCapacities(G)
     n = len(Gc.nodes())
@@ -250,10 +275,9 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
 
             # CASE 3: both u and v are virtual
             elif u in virtual_set and v in virtual_set:
-                additional_monitors = virtualSubgraph(G, (u, v), virtual_set)
+                additional_monitors = getVirtualSubgraph(G, (u, v), virtual_set)
                 remove_nodes_from_cutset(node for node in additional_monitors)
                 virtual_monitors = virtual_monitors.union(additional_monitors)
-
 
 
     # Perform the normal vertex cover on the remaining parts
@@ -273,14 +297,23 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
 if __name__ == "__main__":
     graph = nx.DiGraph()
     graph.add_edges_from(
-        [(1, 2), (2, 5), (1, 4), (4, 9), (5, 7), (5, 6), (6, 8), (7, 8), (7, 13), (13, 14), (14, 7), (9, 7), (1, 3),
-         (3, 10), (10, 3), (12, 11), (11, 1), (16, 14), (15, 16), (14, 15), (15, 14), (2, 17), (17, 18), (18, 11)])
+        [(1, 2), (2, 3), (1, 4), (1, 8), (4, 7), (4, 8), (7, 5), (8, 6), (5, 6), (9, 1), (1, 10), (10, 9), (9, 11),
+         (11, 10), (12, 13), (14, 2), (12, 8), (15, 13)])
+    _virtual_set = [2, 3, 4, 8, 7, 5, 6, 13]
 
-    _virtual_set = [1, 2, 3, 5, 7, 15, 16, 17]
-    final_set = set()
-
+    v_edges = []
     for u, v in graph.edges():
         if u in _virtual_set and v in _virtual_set:
-            final_set = final_set.union(virtualSubgraph(graph, (u, v), _virtual_set))
+            v_edges.append((u, v))
+
+    final_set = set()
+    for v_edge in v_edges:
+        final_set = final_set.union(getVirtualSubgraph(graph, v_edge, virtual_set=_virtual_set))
 
     print(final_set)
+
+    # for u, v in graph.edges():
+    #     if u in _virtual_set and v in _virtual_set:
+    #         final_set = final_set.union(virtualSubgraph(graph, (u, v), _virtual_set))
+    #
+    # print(final_set)
