@@ -2,15 +2,14 @@ import random
 import statistics
 
 import networkx
-import networkx as nx
 from joblib import Parallel, delayed
 
 from Common.GraphUtilities import SetSameWeightsToOtherGraphs
 from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors
 from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
 from Monitoring.MonitorPlacement.Monitor import PlaceMonitors
-from Monitoring.MonitorPlacement.MonitorUtility import PrintCascadeResults, GatherCascadeResults
-from Test.Common.DistributionFunctions import DegreeDistribution, UniformDistribution
+from Monitoring.MonitorPlacement.MonitorUtility import GatherCascadeResults
+from Test.Common.DistributionFunctions import UniformDistribution
 from Test.Common.GraphGenerator import EGraphGenerationFunction
 from Test.Common.HidingFunctions import TotalNodeClosure
 from Test.Common.WeightGenerator import EWeightSetterFunction

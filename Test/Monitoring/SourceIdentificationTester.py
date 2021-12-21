@@ -1,24 +1,21 @@
 import random
-import sys
 
 import networkx
 import networkx as nx
 
 from Common.ColorPrints import cprint, bcolors
 from Common.GraphUtilities import SetSameWeightsToOtherGraphs
+from DiffusionModels.IndependentCascade import GetInfectedSubgraphs, AdaptiveCascade, AdaptiveIntervalCascade
 from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
 from Monitoring.SourceIdentification.Camerini import CameriniAlgorithm
-from DiffusionModels.IndependentCascade import GetInfectedSubgraphs, AdaptiveCascade
 from Test.Common.DistributionFunctions import ENodeHidingSelectionFunction
-from Test.Common.GraphGenerator import GNCConnectedDirectedGraph
+from Test.Common.GraphGenerator import EGraphGenerationFunction
 from Test.Common.HidingFunctions import EClosureFunction
 from Test.Common.WeightGenerator import EWeightSetterFunction
 from definitions import ROOT_DIR
 
 
-def process(graph, steps, k, intervals=None):
-    if intervals is None:
-        intervals = [100, 250, 500, 650, 1000, 1200, 1500, 1700, 2100, 2700]
+def process(graph, steps, k, intervals):
 
     while True:
         random_sources = list(random.sample(list(graph.nodes()), k))
@@ -66,11 +63,14 @@ def source_test():
 
 def full_test():
     # Test setup
+
+    # -------------------------- START PART EQUAL FOR ALL CASES -----------------------------------
     full: nx.DiGraph
     part: nx.DiGraph
     recv: nx.DiGraph
-    path = ROOT_DIR + "/Datasets/Real/Wiki-Vote.txt"
-    full = networkx.read_edgelist(path, create_using=nx.DiGraph, nodetype=int)
+    # path = ROOT_DIR + "/Datasets/Real/Wiki-Vote.txt"
+    # full = networkx.read_edgelist(path, create_using=nx.DiGraph, nodetype=int)
+    full = EGraphGenerationFunction.ERandomSparseDirectedGraph.value["function"](200)
     hiding_func = ENodeHidingSelectionFunction.EDegreeDistribution.value
     closure_func = EClosureFunction.ECrawlerClosure.value
     weight_func = EWeightSetterFunction.EInDegreeWeights.value
@@ -81,51 +81,143 @@ def full_test():
     num_random_sources = 10
     steps = 10
 
-    # Random Source selections
-    random_sources = random.sample(list(part.nodes()), num_random_sources)
-
     # Set weights
     weight_func["function"](full, attribute="weight", force=True)
     SetSameWeightsToOtherGraphs(full, [part, recv])
     weight_func["function"](recv, attribute="weight", force=False)
+    # -------------------------- END PART EQUAL FOR ALL CASES -------------------------------------
 
-    # Run adaptive cascade on all the graphs
-    infected_full = AdaptiveCascade(full, random_sources, steps=steps, intervals=intervals)
-    infected_part = AdaptiveCascade(part, random_sources, steps=steps, intervals=intervals)
-    infected_recv = AdaptiveCascade(recv, random_sources, steps=steps, intervals=intervals)
+    # -------------------------- START PART DIFFERENT FOR ALL CASES -------------------------------
 
-    inf_subgraph_full = GetInfectedSubgraphs(full, infected_full)
-    inf_subgraph_part = GetInfectedSubgraphs(part, infected_part)
-    inf_subgraph_recv = GetInfectedSubgraphs(recv, infected_recv)
+    scores_full = [{"true positives": [], "false_positives": [], "false_negatives": []}] * 40
+    scores_part = [{"true positives": [], "false_positives": [], "false_negatives": []}] * 40
+    scores_recv = [{"true positives": [], "false_positives": [], "false_negatives": []}] * 40
 
+    stats = {"full": {"TP": {"avg": 0, "std": 0}, "FP":  {"avg": 0, "std": 0}, "FN":  {"avg": 0, "std": 0}},
+             "part": {"TP": {"avg": 0, "std": 0}, "FP":  {"avg": 0, "std": 0}, "FN":  {"avg": 0, "std": 0}},
+             "recv": {"TP": {"avg": 0, "std": 0}, "FP":  {"avg": 0, "std": 0}, "FN":  {"avg": 0, "std": 0}}
+    }
 
-    # Compute solutions
-    camerini = CameriniAlgorithm(full, attr="weight")
-    solutions_full = camerini.find_roots_branching(num_random_sources, scores=False, subgraphs=inf_subgraph_full)
-    sources_full = []
-    for solution in solutions_full:
-        sources_full.append(solution[0])
+    for j in range(40):
 
-    camerini = CameriniAlgorithm(part, attr="weight")
-    solutions_part = camerini.find_roots_branching(num_random_sources, scores=False, subgraphs=inf_subgraph_part)
-    sources_part = []
-    for solution in solutions_part:
-        sources_part.append(solution[0])
+        # Random Source selections
+        random_sources = random.sample(list(part.nodes()), num_random_sources)
 
-    camerini = CameriniAlgorithm(recv, attr="weight")
-    solutions_recv = camerini.find_roots_branching(num_random_sources, scores=False, subgraphs=inf_subgraph_recv)
-    sources_recv = []
-    for solution in solutions_recv:
-        sources_recv.append(solution[0])
+        # Run adaptive cascade on all the graphs
+        infected_full = AdaptiveIntervalCascade(full, random_sources, steps=steps, full_intervals=intervals, return_interval=False)
+        infected_part = AdaptiveIntervalCascade(part, random_sources, steps=steps, full_intervals=intervals, return_interval=False)
+        infected_recv = AdaptiveIntervalCascade(recv, random_sources, steps=steps, full_intervals=intervals, return_interval=False)
 
-    cprint(bcolors.OKCYAN, "True Sources:", random_sources)
-    for graph, srcs in zip([full, part, recv], [sources_full, sources_part, sources_recv]):
-        for src in srcs:
-            if src in random_sources:
-                cprint(bcolors.OKGREEN, src, end=" ")
+        inf_subgraph_full = GetInfectedSubgraphs(full, infected_full)
+        inf_subgraph_part = GetInfectedSubgraphs(part, infected_part)
+        inf_subgraph_recv = GetInfectedSubgraphs(recv, infected_recv)
+
+        # Compute solutions
+        camerini = CameriniAlgorithm(full, attr="weight")
+        solutions_full = camerini.find_roots_branching(num_random_sources, scores=False, subgraphs=inf_subgraph_full)
+        sources_full = []
+        for solution in solutions_full:
+            if isinstance(solution, int):
+                sources_full.append(solution)
             else:
-                cprint(bcolors.FAIL, src, end=" ")
-        print("")
+                sources_full.append(solution[0])
+
+        camerini = CameriniAlgorithm(part, attr="weight")
+        solutions_part = camerini.find_roots_branching(num_random_sources, scores=False, subgraphs=inf_subgraph_part)
+        sources_part = []
+        for solution in solutions_part:
+            if isinstance(solution, int):
+                sources_part.append(solution)
+            else:
+                sources_part.append(solution[0])
+
+        camerini = CameriniAlgorithm(recv, attr="weight")
+        solutions_recv = camerini.find_roots_branching(num_random_sources, scores=False, subgraphs=inf_subgraph_recv)
+        sources_recv = []
+        for solution in solutions_recv:
+            if isinstance(solution, int):
+                sources_recv.append(solution)
+            else:
+                sources_recv.append(solution[0])
+
+        cprint(bcolors.OKCYAN, "True Sources:", random_sources)
+        for graph, srcs in zip([full, part, recv], [sources_full, sources_part, sources_recv]):
+            for src in srcs:
+                if src in random_sources:
+                    cprint(bcolors.OKGREEN, src, end=" ")
+                else:
+                    cprint(bcolors.FAIL, src, end=" ")
+            print("")
+
+        for source in sources_full:
+            if source in random_sources:
+                scores_full[j]["true_positives"].append(source)
+            else:
+                scores_full[j]["false_positives"].append(source)
+
+
+        for source in sources_part:
+            if source in random_sources:
+                scores_part[j]["true_positives"].append(source)
+            else:
+                scores_part[j]["false_positives"].append(source)
+
+        for source in sources_recv:
+            if source in random_sources:
+                scores_recv[j]["true_positives"].append(source)
+            else:
+                scores_recv[j]["false_positives"].append(source)
+
+        for source in random_sources:
+            if source not in sources_full:
+                scores_full[j]["false_negatives"].append(source)
+            if source not in sources_part:
+                scores_part[j]["false_negatives"].append(source)
+            if source not in sources_recv:
+                scores_recv[j]["false_negatives"].append(source)
+
+    for j in range(40):
+        stats["full"]["TP"]["avg"] += len(scores_full[j]["true_positives"])
+        stats["full"]["FP"]["avg"] += len(scores_full[j]["false_positives"])
+        stats["full"]["FN"]["avg"] += len(scores_full[j]["false_negatives"])
+
+        stats["part"]["TP"]["avg"] += len(scores_part[j]["true_positives"])
+        stats["part"]["FP"]["avg"] += len(scores_part[j]["false_positives"])
+        stats["part"]["FN"]["avg"] += len(scores_part[j]["false_negatives"])
+
+        stats["recv"]["TP"]["avg"] += len(scores_recv[j]["true_positives"])
+        stats["recv"]["FP"]["avg"] += len(scores_recv[j]["false_positives"])
+        stats["recv"]["FN"]["avg"] += len(scores_recv[j]["false_negatives"])
+
+    stats["full"]["TP"]["avg"] /= 40
+    stats["full"]["FP"]["avg"] /= 40
+    stats["full"]["FN"]["avg"] /= 40
+
+    stats["part"]["TP"]["avg"] /= 40
+    stats["part"]["FP"]["avg"] /= 40
+    stats["part"]["FN"]["avg"] /= 40
+
+    stats["recv"]["TP"]["avg"] /= 40
+    stats["recv"]["FP"]["avg"] /= 40
+    stats["recv"]["FN"]["avg"] /= 40
+
+    print("FULL stats:")
+    print("True Positives (average):",  stats["full"]["TP"]["avg"])
+    print("False Positives (average):", stats["full"]["FP"]["avg"])
+    print("False Negatives (average):", stats["full"]["FN"]["avg"])
+
+    print("PART stats:")
+    print("True Positives (average):",  stats["part"]["TP"]["avg"])
+    print("False Positives (average):", stats["part"]["FP"]["avg"])
+    print("False Negatives (average):", stats["part"]["FN"]["avg"])
+
+    print("RECV stats:")
+    print("True Positives (average):",  stats["recv"]["TP"]["avg"])
+    print("False Positives (average):", stats["recv"]["FP"]["avg"])
+    print("False Negatives (average):", stats["recv"]["FN"]["avg"])
+
+
+    # -------------------------- END PART DIFFERENT FOR ALL CASES ---------------------------------
 
 
 if __name__ == "__main__":
