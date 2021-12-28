@@ -100,7 +100,7 @@ def MMSC(G, B, delta, tau, o, r):
     prob_mis = dict()
 
     c_s_t = bfs_lab(G, o)
-    if c_s_t[r] < delta:
+    if r not in c_s_t or c_s_t[r] < delta:
         print("Error target in delta distance")
         raise SystemExit
 

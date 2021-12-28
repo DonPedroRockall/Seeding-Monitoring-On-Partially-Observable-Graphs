@@ -200,7 +200,8 @@ class MonitorTester:
         cprint(bcolors.OKGREEN, "Set sources and targets. Computing the virtual nodes set...")
 
         # Compute the set of virtual nodes
-        virtual_set = GetVirtualNodesNodeDifference(part, recv)
+        # virtual_set = GetVirtualNodesByDifference(part, recv)
+        virtual_set = GetVirtualNodesByNodeLabel(recv, "RECV")
 
         # Place the monitors on the 3 graphs
         cprint(bcolors.OKGREEN, "Running monitor placement...")
@@ -459,7 +460,7 @@ def single_test_repeat(**kwargs):
 def parallel_test_repeat(mt: MonitorTester):
 
     # Main call for parallelization. Do not change code below this line
-    results = Parallel(n_jobs=10)(delayed(single_test_repeat)(**{
+    results = Parallel(n_jobs=1)(delayed(single_test_repeat)(**{
         "NUM_TO_HIDE": mt.NUM_TO_HIDE,
         "INDEX": mt.TRIPLE_INDEX,
         "NUM_SOURCES": mt.NUM_SOURCES,
@@ -509,37 +510,38 @@ def real_dataset_test():
 
 
 if __name__ == "__main__":
-    real_dataset_test()
-    # mt = MonitorTester()
-    # mt.TRIPLE_INDEX = -1
-    # mt.NUM_NODES = 150
-    # mt.NUM_TO_HIDE = 100
-    # mt.NUM_SOURCES = 10
-    # mt.NUM_TARGETS = 10
-    # mt.GENERATION = EGraphGenerationFunction.ECorePeripheryDirectedGraph
-    # mt.GENERATION_KWARGS = {}
-    # mt.CLOSURE = EClosureFunction.ETotalClosure
-    # mt.CLOSURE_KWARGS = {}
-    # mt.DISTRIBUTION = ENodeHidingSelectionFunction.EDegreeDistribution
-    # mt.DISTRIBUTION_KWARGS = {}
-    # mt.WEIGHT = EWeightSetterFunction.EUniformWeights
-    # mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 1}
-    # mt.DATASET_PATH = ROOT_DIR + "/Datasets"
-    # mt.FOLDER = "Synthetic"
-    # mt.PRINT_TO_FILE = None
-    # mt.TEST_PARAMS = ""
-    #
-    # full, part, recv = GenerateRandomGraphTriple(
-    #     mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["function"], mt.GENERATION_KWARGS, mt.DISTRIBUTION.value["function"],
-    #     mt.DISTRIBUTION_KWARGS, mt.CLOSURE.value["function"], mt.CLOSURE_KWARGS, None, "deg", False)
-    #
-    # index = WriteGraphTriple(mt.DATASET_PATH, mt.FOLDER, GenerateGraphFilename(
-    #         mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["short_name"],
-    #         mt.DISTRIBUTION.value["short_name"], mt.CLOSURE.value["short_name"],
-    #         mt.WEIGHT.value["short_name"]), full, part, recv)
-    #
-    # mt.TRIPLE_INDEX = index
-    #
-    # parallel_test_repeat(mt)
+    # real_dataset_test()
+
+    mt = MonitorTester()
+    mt.TRIPLE_INDEX = -1
+    mt.NUM_NODES = 150
+    mt.NUM_TO_HIDE = 100
+    mt.NUM_SOURCES = 10
+    mt.NUM_TARGETS = 10
+    mt.GENERATION = EGraphGenerationFunction.ERandomSparseDirectedGraph
+    mt.GENERATION_KWARGS = {}
+    mt.CLOSURE = EClosureFunction.ETotalClosure
+    mt.CLOSURE_KWARGS = {}
+    mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
+    mt.DISTRIBUTION_KWARGS = {}
+    mt.WEIGHT = EWeightSetterFunction.EInDegreeWeights
+    mt.WEIGHT_KWARGS = {}
+    mt.DATASET_PATH = ROOT_DIR + "/Datasets"
+    mt.FOLDER = "Synthetic"
+    mt.PRINT_TO_FILE = None
+    mt.TEST_PARAMS = ""
+
+    full, part, recv = GenerateRandomGraphTriple(
+        mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["function"], mt.GENERATION_KWARGS, mt.DISTRIBUTION.value["function"],
+        mt.DISTRIBUTION_KWARGS, mt.CLOSURE.value["function"], mt.CLOSURE_KWARGS, None, "deg", False)
+
+    index = WriteGraphTriple(mt.DATASET_PATH, mt.FOLDER, GenerateGraphFilename(
+            mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["short_name"],
+            mt.DISTRIBUTION.value["short_name"], mt.CLOSURE.value["short_name"],
+            mt.WEIGHT.value["short_name"]), full, part, recv)
+
+    mt.TRIPLE_INDEX = index
+
+    parallel_test_repeat(mt)
 
 

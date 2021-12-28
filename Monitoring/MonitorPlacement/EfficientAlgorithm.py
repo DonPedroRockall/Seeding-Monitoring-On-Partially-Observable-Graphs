@@ -1,4 +1,6 @@
 import copy
+import sys
+from time import sleep
 
 import networkx
 import networkx as nx
@@ -6,6 +8,10 @@ from networkx.algorithms.flow import *
 from collections import deque
 
 from Common.ColorPrints import bcolors, cprint
+from Common.DrawGraph import DrawGraph
+
+
+static_int = 0
 
 
 def bfs_res(ResGraph, src):
@@ -199,8 +205,6 @@ def getVirtualSubgraph(graph: nx.DiGraph, source_edge, virtual_set):
     return real_set
 
 
-
-
 def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
     Gc = setCapacities(G)
     n = len(Gc.nodes())
@@ -276,6 +280,7 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
             # CASE 3: both u and v are virtual
             elif u in virtual_set and v in virtual_set:
                 additional_monitors = getVirtualSubgraph(G, (u, v), virtual_set)
+                remove_nodes_from_cutset(u, v)
                 remove_nodes_from_cutset(node for node in additional_monitors)
                 virtual_monitors = virtual_monitors.union(additional_monitors)
 
@@ -291,6 +296,7 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
 
         cprint(bcolors.OKCYAN, len(virtual_monitors), "Virtual Monitors:", virtual_monitors)
         cprint(bcolors.OKCYAN, len(monitor_set), "Non-virtual monitors:", monitor_set)
+
     return monitor_set.union(virtual_monitors), len(S)
 
 

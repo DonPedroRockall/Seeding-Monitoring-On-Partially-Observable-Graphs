@@ -3,7 +3,7 @@ import networkx as nx
 from Common.ColorPrints import cprint, bcolors
 
 
-def GetVirtualNodesNodeDifference(part: nx.DiGraph, recv: nx.DiGraph):
+def GetVirtualNodesByDifference(part: nx.DiGraph, recv: nx.DiGraph):
     """
     Returns the set of virtual nodes. Virtual nodes are defined as the nodes that are present in recv graph but not in
     part graph. A node is present if it has the same label
@@ -14,6 +14,14 @@ def GetVirtualNodesNodeDifference(part: nx.DiGraph, recv: nx.DiGraph):
     virtuals = set()
     for node in recv.nodes():
         if node not in part.nodes():
+            virtuals.add(node)
+    return virtuals
+
+
+def GetVirtualNodesByNodeLabel(recv: nx.DiGraph, label: str):
+    virtuals = set()
+    for node in recv.nodes():
+        if str(node).startswith(label):
             virtuals.add(node)
     return virtuals
 
