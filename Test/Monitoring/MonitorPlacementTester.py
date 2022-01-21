@@ -123,6 +123,7 @@ class MonitorTester:
         self.NUM_TO_HIDE = 10
         self.NUM_SOURCES = 10
         self.NUM_TARGETS = 10
+        self.CNODES = 100
         self.GENERATION = EGraphGenerationFunction.EGNCConnectedDirectedGraph.value
         self.GENERATION_KWARGS = {}
         self.CLOSURE = EClosureFunction.ETotalClosure.value
@@ -214,10 +215,9 @@ class MonitorTester:
         cprint(bcolors.OKGREEN, "Running monitor placement...")
 
         # Run the monitor placement algorithm on all the 3 graphs
-        monitors_full, _ = PlaceMonitors(full, sources, targets, delta=1, tau=0.1, cascade_iterations=100, verbose=True)
-        monitors_part, _ = PlaceMonitors(part, sources, targets, delta=1, tau=0.1, cascade_iterations=100, verbose=True)
-        monitors_recv, _ = PlaceMonitors(recv, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                      virtual_set=virtual_set, verbose=True)
+        monitors_full, _ = PlaceMonitors(full, sources, targets, c_nodes=self.CNODES, verbose=True)
+        monitors_part, _ = PlaceMonitors(part, sources, targets, c_nodes=self.CNODES, verbose=True)
+        monitors_recv, _ = PlaceMonitors(recv, sources, targets, c_nodes=self.CNODES, virtual_set=virtual_set, verbose=True)
 
         # Test the monitor placement by running the independent cascade on all three
         ic_full_full = IndependentCascadeWithMonitors(full, sources, monitors_full, 100)
