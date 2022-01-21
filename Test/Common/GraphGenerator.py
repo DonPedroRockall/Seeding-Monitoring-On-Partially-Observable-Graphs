@@ -83,9 +83,9 @@ def CorePeripheryDirectedGraph(min_num_nodes, **kwargs):
 
     if kwargs == None:
         kwargs = {}
-    a = 0.99 if "a" not in kwargs else kwargs["a"]
-    b = 0.75 if "b" not in kwargs else kwargs["b"]
-    c = 0.65 if "c" not in kwargs else kwargs["c"]
+    a = 0.90 if "a" not in kwargs else kwargs["a"]
+    b = 0.65 if "b" not in kwargs else kwargs["b"]
+    c = 0.45 if "c" not in kwargs else kwargs["c"]
     d = 0.01 if "d" not in kwargs else kwargs["d"]
 
     P = GenerateSKG(numpy.asarray([[a, b], [c, d]], dtype=float), power)
@@ -141,7 +141,7 @@ class EGraphGenerationFunction(Enum):
                                   "short_name": "GNC"}
     ECorePeripheryDirectedGraph = {"name": "Core-Periphery graph", "function": CorePeripheryDirectedGraph,
                                    "short_name": "C-P"}
-    ERandomSparseDirectedGraph = {"name": "Sparse Directed Graph", "function": RandomConnectedDirectedGraph,
+    ERandomSparseDirectedGraph = {"name": "RandomSparse Directed Graph", "function": RandomConnectedDirectedGraph,
                                   "short_name": "SDG"}
     EFastGNPRandomGraph = {"name": "GNP Random Graph", "function": GNPRandomDirectedGraph,
                            "short_name": "GNP"}

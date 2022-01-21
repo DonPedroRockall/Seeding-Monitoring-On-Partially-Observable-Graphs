@@ -10,17 +10,15 @@ from Common.DrawGraph import DrawGraph
 from Test.Common.GraphGenerator import RandomConnectedDirectedGraph
 
 
-def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=100, virtual_set=[], verbose=False):
+def PlaceMonitors(graph, sources, targets, c_nodes, virtual_set=[], verbose=False):
     """
     Main Monitor Placement Algorithm
-    :param graph:
-    :param sources:
-    :param targets:
-    :param delta:
-    :param tau:
-    :param cascade_iterations:
-    :param virtual_set:
-    :param verbose:
+    :param graph:           The graph on which to perform the Monitor Placement algorithm
+    :param sources:         The identified sources
+    :param targets:         The selected targets
+    :param c_nodes:         The maximum number of admissible infected nodes
+    :param virtual_set:     The virtual nodes, that is, the list of nodes present in RECV but not in PART
+    :param verbose:         Whether or not to print debug information
     :return:
     """
     if verbose:
@@ -34,27 +32,6 @@ def PlaceMonitors(graph, sources, targets, delta=1, tau=0.1, cascade_iterations=
     G_contracted, c_target = ContractGraph(G_contracted.copy(), targets)
 
     G_m_test_contracted = G_contracted.copy()
-
-    n_d = N_delta(G_contracted, c_source)
-
-    B = set(n_d)
-    m1 = MMSC(G_contracted, B, delta, tau, c_source, c_target)
-    if verbose:
-        cprint(bcolors.OKGREEN, "\nMMSC\nMonitor set =", m1, "\nNumber of monitors =", len(m1))
-        cprint(bcolors.OKGREEN, "Num delta neighbors =", delta, ",", len(n_d))
-
-    G_cascade = G_m_test_contracted.copy()
-    total_nodes = 0
-    for x in range(cascade_iterations):
-        ic = IndependentCascadeWithMonitors(G_cascade, [c_source], m1)
-        Infected_set = set()
-        for sublist in ic:
-            Infected_set = Infected_set.union(sublist)
-        total_nodes += len(Infected_set)
-        c_nodes = total_nodes / cascade_iterations
-
-    if verbose:
-        cprint(bcolors.OKGREEN, "\nAVG " + str(cascade_iterations) + " CASCADE: Number of Infected = [", c_nodes, "]\n")
 
     m2, inf = eAlgorithm(G_m_test_contracted, c_target, c_nodes, c_source, virtual_set=virtual_set, verbose=verbose)
 

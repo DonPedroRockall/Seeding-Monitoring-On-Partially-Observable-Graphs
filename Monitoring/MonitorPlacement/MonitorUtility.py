@@ -122,7 +122,7 @@ def select_ss_r(G: networkx.DiGraph, ns):
 
 def GatherCascadeResults(ic_results, graph, sources, targets, monitors):
     """
-    Transforms the Independent Cascade results in more readable metrics. Can print on std output or on file
+    Transforms the Independent Cascade results in more readable metrics
     :param monitors:            The set of monitors for a specific graph
     :param targets:             The set of targets
     :param sources:             The set of sources

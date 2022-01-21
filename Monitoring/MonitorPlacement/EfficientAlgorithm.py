@@ -281,8 +281,8 @@ def eAlgorithm(G, target, k, source_node, virtual_set=[], verbose=False):
             elif u in virtual_set and v in virtual_set:
                 additional_monitors = getVirtualSubgraph(G, (u, v), virtual_set)
                 remove_nodes_from_cutset(u, v)
-                remove_nodes_from_cutset(node for node in additional_monitors)
                 virtual_monitors = virtual_monitors.union(additional_monitors)
+                remove_nodes_from_cutset(node for node in additional_monitors)
 
 
     # Perform the normal vertex cover on the remaining parts

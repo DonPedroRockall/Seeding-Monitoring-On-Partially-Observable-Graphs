@@ -86,6 +86,14 @@ class MonitorTestReport:
         self.CASCADE_ITERATIONS_FP = 0
         self.CASCADE_ITERATIONS_RR = 0
         self.CASCADE_ITERATIONS_FR = 0
+        # Nodes saved
+        self.FULL_NODES_SAVED_PER_MONITOR = 0
+        self.PART_NODES_SAVED_PER_MONITOR = 0
+        self.RECV_NODES_SAVED_PER_MONITOR = 0
+        # Targets saved
+        self.FULL_TARGETS_SAVED_PER_MONITOR = 0
+        self.PART_TARGETS_SAVED_PER_MONITOR = 0
+        self.RECV_TARGETS_SAVED_PER_MONITOR = 0
 
     @staticmethod
     def aggregate_results(results: list):
@@ -161,15 +169,14 @@ class MonitorTester:
 
         return full, part, recv
 
-    def test_real_dataset(self, path):
+    def get_real_dataset_triple(self, path):
         full = networkx.read_edgelist(path, create_using=networkx.DiGraph, nodetype=int)
         self.NUM_NODES = full.number_of_nodes()
         nth = self.DISTRIBUTION.value["function"](full, self.NUM_TO_HIDE)
         part = self.CLOSURE.value["function"](full.copy(), nth)
         recv, _ = InfluentialNodeRecovery(part, self.NUM_TO_HIDE, 2)
-        return self.perform_test(full, part, recv)
+        return full, part, recv
 
-    # TODO: remove nth
     def perform_test(self, full, part, recv):
 
         # Generate the weights for the full graph
@@ -238,6 +245,212 @@ class MonitorTester:
         # Return the monitors for eventual further processing
         return results
 
+    def perform_th_test(self, full, part, recv, threshold):
+
+        # Generate the weights for the full graph
+        cprint(bcolors.OKGREEN, "Setting weights...")
+        self.WEIGHT.value["function"](full, attribute="weight", force=True, **self.WEIGHT_KWARGS)
+        # Copy the weights to the other two graphs
+        SetSameWeightsToOtherGraphs(full, [part, recv])
+
+        # Assign random edges to the newly reconstructed edges
+        self.WEIGHT.value["function"](recv, attribute="weight", force=False, **self.WEIGHT_KWARGS)
+
+        # Choose sources and targets (they have to be in all 3 graphs)
+        cprint(bcolors.OKGREEN, "Choosing targets...")
+        valid_nodes = set(part.nodes())
+
+        # Now the different part: increase the number of sources as to increase the number of infected nodes above the threshold
+        sources = []
+        full_done = False
+        part_done = False
+        recv_done = False
+        sources_full = []
+        sources_part = []
+        sources_recv = []
+
+        # Targets are fixed
+        targets = list(random.sample(list(valid_nodes), self.NUM_TARGETS))
+        for trg in targets:
+            valid_nodes.remove(trg)
+
+        while not (full_done and part_done and recv_done):
+
+            if len(valid_nodes) < self.NUM_SOURCES + self.NUM_TARGETS:
+                print(f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
+                      f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
+                return
+
+            # Add more sources to the graph
+            new_sources = list(random.sample(list(valid_nodes), self.NUM_SOURCES))
+            sources.extend(new_sources)
+            for src in new_sources:
+                valid_nodes.remove(src)
+
+            # Compute the set of virtual nodes
+            virtual_set = GetVirtualNodesByNodeLabel(recv, "RECV")
+
+            # Perform IC to see the results and gather them
+            if not full_done:
+                ic_full_full = IndependentCascadeWithMonitors(full, sources, [], 100)
+                cascade_results = GatherCascadeResults(ic_full_full, full, sources, targets, [])
+                if cascade_results["num_of_infected"] > threshold:
+                    sources_full = sources
+                    full_done = True
+
+
+            if not part_done:
+                ic_full_part = IndependentCascadeWithMonitors(part, sources, [], 100)
+                cascade_results = GatherCascadeResults(ic_full_part, full, sources, targets, [])
+                if cascade_results["num_of_infected"] > threshold:
+                    sources_part = sources
+                    part_done = True
+
+            if not recv_done:
+                ic_full_recv = IndependentCascadeWithMonitors(recv, sources, [], 100)
+                cascade_results = GatherCascadeResults(ic_full_recv, full, sources, targets, [])
+                if cascade_results["num_of_infected"] > threshold:
+                    sources_recv = sources
+                    recv_done = True
+
+        monitors_full, _ = PlaceMonitors(full, sources_full, targets, delta=1, tau=0.1, cascade_iterations=100,
+                                         verbose=True)
+        monitors_part, _ = PlaceMonitors(part, sources_part, targets, delta=1, tau=0.1, cascade_iterations=100,
+                                         verbose=True)
+        monitors_recv, _ = PlaceMonitors(recv, sources_recv, targets, delta=1, tau=0.1, cascade_iterations=100,
+                                         virtual_set=virtual_set, verbose=True)
+
+        ic_res = IndependentCascadeWithMonitors(full, sources, monitors_full, 100)
+        cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
+        finf_full = cascade_results["num_of_infected"]
+
+        ic_res = IndependentCascadeWithMonitors(full, sources, monitors_part, 100)
+        cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
+        finf_part = cascade_results["num_of_infected"]
+
+        ic_res = IndependentCascadeWithMonitors(full, sources, monitors_recv, 100)
+        cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
+        finf_recv = cascade_results["num_of_infected"]
+
+        print("FULL (", len(sources_full), sources_full)
+        print("PART (", len(sources_part), sources_part)
+        print("RECV (", len(sources_recv), sources_recv)
+
+        print("FULL (", len(monitors_full), monitors_full)
+        print("PART (", len(monitors_part), monitors_part)
+        print("RECV (", len(monitors_recv), monitors_recv)
+
+        print("FULL", finf_full)
+        print("PART", finf_part)
+        print("RECV", finf_recv)
+
+
+    def perform_fixed_monitors_test(self, full, part, recv, num_monitors):
+
+        # Generate the weights for the full graph
+        cprint(bcolors.OKGREEN, "Setting weights...")
+        self.WEIGHT.value["function"](full, attribute="weight", force=True, **self.WEIGHT_KWARGS)
+        # Copy the weights to the other two graphs
+        SetSameWeightsToOtherGraphs(full, [part, recv])
+
+        # Assign random edges to the newly reconstructed edges
+        self.WEIGHT.value["function"](recv, attribute="weight", force=False, **self.WEIGHT_KWARGS)
+
+
+
+        # Choose sources and targets (they have to be in all 3 graphs)
+        cprint(bcolors.OKGREEN, "Choosing targets...")
+        valid_nodes = set(part.nodes())
+
+        # Now the different part: increase the number of sources as to increase the number of infected nodes above the threshold
+        sources = []
+        full_done = False
+        part_done = False
+        recv_done = False
+        sources_full = []
+        sources_part = []
+        sources_recv = []
+        monitors_full = []
+        monitors_part = []
+        monitors_recv = []
+
+        # Targets are fixed
+        targets = list(random.sample(list(valid_nodes), self.NUM_TARGETS))
+        for trg in targets:
+            valid_nodes.remove(trg)
+
+        while not (full_done and part_done and recv_done):
+
+            if len(valid_nodes) < self.NUM_SOURCES:
+                cprint(bcolors.FAIL, f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
+                      f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
+                num_monitors = -1  # disable hard limit and let the algorithm continue
+            else:
+                # Add more sources to the test
+                new_sources = list(random.sample(list(valid_nodes), self.NUM_SOURCES))
+                sources.extend(new_sources)
+                print("extended sources: new len", len(sources))
+                for src in new_sources:
+                    valid_nodes.remove(src)
+
+            # Compute the set of virtual nodes
+            virtual_set = GetVirtualNodesByNodeLabel(recv, "RECV")
+
+            if not full_done:
+                monitors_full, _ = PlaceMonitors(full, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
+                                                verbose=True)
+                if len(monitors_full) >= num_monitors:
+                    sources_full = sources.copy()
+                    full_done = True
+                    print("full done! with", len(sources_full))
+
+
+            if not part_done:
+                monitors_part, _ = PlaceMonitors(part, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
+                                                verbose=True)
+                if len(monitors_part) >= num_monitors:
+                    sources_part = sources.copy()
+                    part_done = True
+                    print("part done! with", len(sources_part))
+
+            if not recv_done:
+                monitors_recv, _ = PlaceMonitors(recv, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
+                                                virtual_set=virtual_set, verbose=True)
+                if len(monitors_recv) >= num_monitors:
+                    sources_recv = sources.copy()
+                    recv_done = True
+                    print("recv done! with", len(sources_recv))
+
+
+        ic_res = IndependentCascadeWithMonitors(full, sources, monitors_full, 100)
+        cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
+        finf_full = cascade_results["num_of_infected"]
+
+        ic_res = IndependentCascadeWithMonitors(full, sources, monitors_part, 100)
+        cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
+        finf_part = cascade_results["num_of_infected"]
+
+        ic_res = IndependentCascadeWithMonitors(full, sources, monitors_recv, 100)
+        cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
+        finf_recv = cascade_results["num_of_infected"]
+
+        print("FULL (", len(sources_full), sources_full)
+        print("PART (", len(sources_part), sources_part)
+        print("RECV (", len(sources_recv), sources_recv)
+
+        print("FULL (", len(monitors_full), monitors_full)
+        print("PART (", len(monitors_part), monitors_part)
+        print("RECV (", len(monitors_recv), monitors_recv)
+
+        print("FULL", finf_full)
+        print("PART", finf_part)
+        print("RECV", finf_recv)
+
+        DrawGraph(full, graph_name="FULL")
+        DrawGraph(part, graph_name="PART")
+        DrawGraph(recv, graph_name="RECV")
+
+
     @staticmethod
     def gather_results(full, part, recv, mfull, mpart, mrecv, res_ff, res_fp, res_rr, res_fr, sources, targets):
         """Organizes results into a dict so to manage them in different ways."""
@@ -259,7 +472,7 @@ class MonitorTester:
         mtr.PERC_HIDDEN = mtr.NUM_HIDDEN / n
         mtr.NUM_RECOVERED = n_recv - n_part
         mtr.PERC_RECOVERED_FULL = mtr.NUM_RECOVERED / n
-        mtr.PERC_RECOVERED_HIDDEN = mtr.NUM_RECOVERED / mtr.NUM_HIDDEN
+        mtr.PERC_RECOVERED_HIDDEN = mtr.NUM_RECOVERED / mtr.NUM_HIDDEN if mtr.PERC_HIDDEN != 0 else "<no hidden nodes>"
         # source and targets
         mtr.SOURCES = sources
         mtr.NUM_SOURCES = len(sources)
@@ -309,6 +522,14 @@ class MonitorTester:
         mtr.CASCADE_ITERATIONS_FP = res_fp["num_of_iterations"]
         mtr.CASCADE_ITERATIONS_RR = res_rr["num_of_iterations"]
         mtr.CASCADE_ITERATIONS_FR = res_fr["num_of_iterations"]
+        # Nodes saved per monitor
+        mtr.FULL_NODES_SAVED_PER_MONITOR = round((mtr.NUM_NODES_FULL - mtr.NUM_INFECTED_FF) / mtr.NUM_MONITORS_FULL, 3)
+        mtr.PART_NODES_SAVED_PER_MONITOR = round((mtr.NUM_NODES_PART - mtr.NUM_INFECTED_FP) / mtr.NUM_MONITORS_PART, 3)
+        mtr.RECV_NODES_SAVED_PER_MONITOR = round((mtr.NUM_NODES_RECV - mtr.NUM_INFECTED_FR) / mtr.NUM_MONITORS_RECV, 3)
+        # Targets saved per monitor
+        mtr.FULL_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FF) / mtr.NUM_MONITORS_FULL, 3)
+        mtr.PART_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FP) / mtr.NUM_MONITORS_PART, 3)
+        mtr.RECV_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FR) / mtr.NUM_MONITORS_RECV, 3)
 
         return mtr
 
@@ -460,7 +681,7 @@ def single_test_repeat(**kwargs):
 def parallel_test_repeat(mt: MonitorTester):
 
     # Main call for parallelization. Do not change code below this line
-    results = Parallel(n_jobs=1)(delayed(single_test_repeat)(**{
+    results = Parallel(n_jobs=10)(delayed(single_test_repeat)(**{
         "NUM_TO_HIDE": mt.NUM_TO_HIDE,
         "INDEX": mt.TRIPLE_INDEX,
         "NUM_SOURCES": mt.NUM_SOURCES,
@@ -491,8 +712,8 @@ def parallel_test_repeat(mt: MonitorTester):
 def real_dataset_test():
     mt = MonitorTester()
     mt.TRIPLE_INDEX = -1
-    mt.NUM_TO_HIDE = int(mt.NUM_NODES * 0.1)
-    mt.NUM_SOURCES = 20
+    mt.NUM_TO_HIDE = 750
+    mt.NUM_SOURCES = 100
     mt.NUM_TARGETS = 20
     mt.GENERATION = EGraphGenerationFunction.ERealGraph
     mt.GENERATION_KWARGS = {}
@@ -500,32 +721,45 @@ def real_dataset_test():
     mt.CLOSURE_KWARGS = {}
     mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
     mt.DISTRIBUTION_KWARGS = {}
-    mt.WEIGHT = EWeightSetterFunction.EUniformWeights
-    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
+    mt.WEIGHT = EWeightSetterFunction.EInDegreeWeights
+    # mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
+    mt.WEIGHT_KWARGS = {}
     mt.DATASET_PATH = ROOT_DIR + "/Datasets"
     mt.FOLDER = "Real"
     mt.PRINT_TO_FILE = None
     mt.TEST_PARAMS = ""
-    mt.test_real_dataset(os.path.join(mt.DATASET_PATH, "Real", "Wiki-Vote.txt"))
+    f, p, r = mt.get_real_dataset_triple(os.path.join(mt.DATASET_PATH, "Real", "Wiki-Vote.txt"))
+    return mt, f, p, r
+
+
+def parallel_real_test_repeat():
+    mt, full, part, recv = real_dataset_test()
+    # Main call for parallelization.
+    results = Parallel(n_jobs=10)(delayed(mt.perform_test)(full, part, recv) for _ in range(10))
+    # Result aggregation and print
+    agg_results = MonitorTestReport.aggregate_results(results)
+    for key in agg_results:
+        print(key, agg_results[key])
 
 
 if __name__ == "__main__":
-    # real_dataset_test()
+    parallel_real_test_repeat()
 
+    """
     mt = MonitorTester()
     mt.TRIPLE_INDEX = -1
-    mt.NUM_NODES = 150
-    mt.NUM_TO_HIDE = 100
+    mt.NUM_NODES = 150  # 250
+    mt.NUM_TO_HIDE = 50  # 20
     mt.NUM_SOURCES = 10
     mt.NUM_TARGETS = 10
-    mt.GENERATION = EGraphGenerationFunction.ERandomSparseDirectedGraph
+    mt.GENERATION = EGraphGenerationFunction.ECorePeripheryDirectedGraph
     mt.GENERATION_KWARGS = {}
     mt.CLOSURE = EClosureFunction.ETotalClosure
     mt.CLOSURE_KWARGS = {}
     mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
     mt.DISTRIBUTION_KWARGS = {}
-    mt.WEIGHT = EWeightSetterFunction.EInDegreeWeights
-    mt.WEIGHT_KWARGS = {}
+    mt.WEIGHT = EWeightSetterFunction.EUniformWeights
+    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
     mt.DATASET_PATH = ROOT_DIR + "/Datasets"
     mt.FOLDER = "Synthetic"
     mt.PRINT_TO_FILE = None
@@ -543,5 +777,7 @@ if __name__ == "__main__":
     mt.TRIPLE_INDEX = index
 
     parallel_test_repeat(mt)
+    # mt.perform_fixed_monitors_test(full, part, recv, 30)
+    """
 
 

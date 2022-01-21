@@ -114,6 +114,7 @@ def GetInfectedSubgraphs(graph: nx.DiGraph, infected_nodes):
 def AdaptiveIntervalCascade(graph, random_sources, steps, full_intervals, max_iterations=35, return_interval=False):
     for cur_index in range(len(full_intervals) - 1):
         infected_nodes = AdaptiveCascade(graph, random_sources, steps, full_intervals[cur_index:cur_index + 2], max_iterations)
+        print("ADAPTIVE CASCADE", len(infected_nodes), full_intervals[cur_index], full_intervals[cur_index + 1])
         if infected_nodes is not None:
             if return_interval:
                 return infected_nodes, full_intervals[cur_index], full_intervals[cur_index + 1]

@@ -3,6 +3,68 @@ import networkx
 from KronFit.KroneckerFit import *
 
 
+def ExpandGraph(graph: networkx.DiGraph, M, theta_init, alpha=None, beta=None, epsilon=0, centrality="deg"):
+    """
+    Performs an Influential Node Recovery, but this function assumes the graph is pre-kronfitted, and as such,
+    needs the theta_init that the KronFit algorithm provides. Useful to reduce computing times, in case the theta_init
+    matrix is known
+    :param graph:           The original observable graph
+    :param M:               The maximum number of influential nodes to recover
+    :param theta_init:      The initiator matrix. It should be a square nparray matrix
+    :param alpha:           Parameter used for Katz centrality
+    :param beta:            Parameter used for Katz centrality
+    :param epsilon:         Minimum value of influential centrality that a node has to have to be considered influential
+    :param centrality:      The Centrality Measure to use. Options: "katz", "deg". Defaults to "deg" (Degree centrality)
+    :return:                A Graph with the recovered nodes connected to it and how many nodes have been connected
+    """
+    # Transform graph to directed if necessary
+    graph_was_directed = True
+    if not networkx.is_directed(graph):
+        graph = graph.to_directed()
+        graph_was_directed = False
+
+    # # Remap node labels to be integers
+    # observable_graph: DiGraph = networkx.relabel.convert_node_labels_to_integers(graph)
+    # Count the number of observable nodes
+    N = graph.number_of_nodes()
+    # Store the ordering into a list that has to be used later for label consistency
+    node_ordering = list(graph.nodes())
+
+    # Get the graph and the number of nodes from the adjacency matrix
+    A = networkx.convert_matrix.to_numpy_matrix(graph, nodelist=node_ordering)
+
+    # Compute the necessary power of the kronecker product K
+    K = 0
+    while theta_init.shape[0] ** K < N + M:
+        K += 1
+
+    # Perform KronFit on graph and generate a Stochastic Kronecker Graph
+    P = GenerateSKG(theta_init, K)
+
+    # Instantiate the graph by performing Bernoulli realizations
+    for u in range(0, len(P)):
+        for v in range(0, len(P)):
+            if u < N and v < N:  # Copy the original elements
+                P[u, v] = A[u, v]
+            elif v >= u:
+                P[u, v] = Bernoulli(P[u, v])  # Perform realizations for the new elements
+                P[v, u] = P[u, v]  # The matrix is symmetrical, so mirror it
+
+    # Performs node selection to remove non-influential nodes
+    H, r = NodeSelect(P, N, M, alpha, beta, epsilon, centrality=centrality)
+    # Expand the node_ordering list to include the new nodes
+    for i in range(H):
+        node_ordering.append(f"RECV{i}")
+    # Estimates the new graph by connecting the nodes
+    estimated_graph = ConnectNodes(graph, node_ordering, P, r)
+
+    # If necessary, transform back the graph to undirected
+    if not graph_was_directed:
+        estimated_graph = networkx.to_undirected(estimated_graph)
+
+    return estimated_graph, H
+
+
 def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=None, epsilon=0, centrality="deg"):
     """
     Estimates and recovers a number of influential nodes from a partially observable graph
@@ -67,6 +129,7 @@ def GraphRecv(graph: networkx.DiGraph, ordering, N0, M):
 
     # Perform KronFit on graph and generate a Stochastic Kronecker Graph
     Theta = KronFit(graph, N0)
+    print("THETAAAA", Theta)
     P = GenerateSKG(Theta, K)
 
     # Instantiate the graph by performing Bernoulli realizations

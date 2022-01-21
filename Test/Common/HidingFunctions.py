@@ -54,7 +54,8 @@ def CrawlerClosure(graph: networkx.DiGraph, nodes_to_hide: list, **kwargs):
     else:
         start_node = kwargs["starting_node"]
 
-    print(start_node)
+    if kwargs is not None and "verbose" in kwargs:
+        cprint(bcolors.OKCYAN, "Starting node for the Crawler Closure:", start_node)
 
     pq = Queue()
     pq.put(start_node)
