@@ -39,7 +39,7 @@ def single_test(inf_thresh, full, part, sources, targets):
                  "NUM_TG_INFECTED": [],
                  "NUM_MONITORS": []}
     for i in range(40):
-        monitors, _ = PlaceMonitors(recv, sources, targets, cascade_iterations=100, verbose=True)
+        monitors, _ = PlaceMonitors(recv, sources, targets, c_nodes=100, verbose=True)
         ic_results = IndependentCascadeWithMonitors(full, sources, monitors, 100)
         results = GatherCascadeResults(ic_results, full, sources, targets, monitors)
         stat_dict["NUM_INFECTED"].append(results["num_of_infected"])

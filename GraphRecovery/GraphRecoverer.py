@@ -3,7 +3,7 @@ import networkx
 from KronFit.KroneckerFit import *
 
 
-def ExpandGraph(graph: networkx.DiGraph, M, theta_init, alpha=None, beta=None, epsilon=0, centrality="deg"):
+def ExpandGraph(graph: networkx.DiGraph, M, theta_init, alpha=None, beta=None, epsilon=None, centrality="deg"):
     """
     Performs an Influential Node Recovery, but this function assumes the graph is pre-kronfitted, and as such,
     needs the theta_init that the KronFit algorithm provides. Useful to reduce computing times, in case the theta_init
@@ -22,6 +22,11 @@ def ExpandGraph(graph: networkx.DiGraph, M, theta_init, alpha=None, beta=None, e
     if not networkx.is_directed(graph):
         graph = graph.to_directed()
         graph_was_directed = False
+
+    # Check if epsilon has to be automatically assigned
+    if epsilon is None:
+        cprint(bcolors.OKBLUE, "Influential Threshold was set to None. Setting it to average of degree")
+        epsilon = sum(deg for node, deg in graph.degree()) / float(graph.number_of_nodes())
 
     # # Remap node labels to be integers
     # observable_graph: DiGraph = networkx.relabel.convert_node_labels_to_integers(graph)
@@ -62,10 +67,12 @@ def ExpandGraph(graph: networkx.DiGraph, M, theta_init, alpha=None, beta=None, e
     if not graph_was_directed:
         estimated_graph = networkx.to_undirected(estimated_graph)
 
+    print("End extended graph")
+
     return estimated_graph, H
 
 
-def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=None, epsilon=0, centrality="deg"):
+def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=None, epsilon=None, centrality="deg"):
     """
     Estimates and recovers a number of influential nodes from a partially observable graph
     :param graph:           The original observable graph
@@ -82,6 +89,11 @@ def InfluentialNodeRecovery(graph: networkx.DiGraph, M, N0, alpha=None, beta=Non
     if not networkx.is_directed(graph):
         graph = graph.to_directed()
         graph_was_directed = False
+
+    # Check if epsilon has to be automatically assigned
+    if epsilon is None:
+        cprint(bcolors.OKBLUE, "Influential Threshold was set to None. Setting it to average of degree")
+        epsilon = sum(deg for node, deg in graph.degree()) / float(graph.number_of_nodes())
 
     # # Remap node labels to be integers
     # observable_graph: DiGraph = networkx.relabel.convert_node_labels_to_integers(graph)

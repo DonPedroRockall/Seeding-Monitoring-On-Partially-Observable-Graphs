@@ -70,7 +70,7 @@ def GenerateRandomGraphTriple(number_of_nodes: int,
         influential_threshold = sum(deg for node, deg in part_obs_graph.degree()) / float(
             part_obs_graph.number_of_nodes())
         if verbose:
-            cprint(bcolors.OKBLUE, "Influential Treshold was set to None. Setting it to average of degree")
+            cprint(bcolors.OKBLUE, "Influential Threshold was set to None. Setting it to average of degree")
 
     # Reconstruct the graph
     reconstructed_graph, nodes_recovered = InfluentialNodeRecovery(

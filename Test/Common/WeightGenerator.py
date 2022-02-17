@@ -12,11 +12,20 @@ def UniformWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs)
 
 def InDegreeWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs):
     """Sets weight as Gauss Distribution Realizations. No kwargs needed"""
-    max_in_degree = max(graph.in_degree[node] for node in graph.nodes())
-    for u, v, data in graph.edges(data=True):
-        if not force and attribute in data:
-            continue
-        data[attribute] = graph.in_degree[v] / max_in_degree
+    # if "directed" not in kwargs or not kwargs["directed"]:
+    if hasattr(graph, "in_degree"):
+        max_in_degree = max(graph.in_degree[node] for node in graph.nodes())
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute in data:
+                continue
+            data[attribute] = graph.in_degree[v] / max_in_degree
+    else:
+        max_degree = max(graph.degree[node] for node in graph.nodes())
+        for u, v, data in graph.edges(data=True):
+            if not force and attribute in data:
+                continue
+            data[attribute] = graph.degree[v] / max_degree
+
 
 
 def GaussWeights(graph: nx.DiGraph, attribute="weight", force=False, **kwargs):

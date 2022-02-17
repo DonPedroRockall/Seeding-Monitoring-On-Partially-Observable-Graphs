@@ -7,7 +7,7 @@ from pandas import DataFrame
 
 
 def RetrieveResults():
-    g_path = ROOT_DIR + "/Test/Monitoring/Results/SyntheticDatasets/TotalClosure/Weights0-01/GNC"
+    g_path = ROOT_DIR + "/Test/Monitoring/Results/SyntheticDatasets/CrawlerClosure/Weights0-01/CorePer"
     table = numpy.ndarray(shape=(10, 12))
 
     for folder in os.listdir(g_path):

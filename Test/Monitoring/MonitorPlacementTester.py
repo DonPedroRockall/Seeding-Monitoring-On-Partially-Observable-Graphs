@@ -1,25 +1,30 @@
+import operator
 import os
 import statistics
 import sys
 
-import networkx
-import numpy
 from joblib import delayed, Parallel
+from networkx import single_source_dijkstra_path_length
 
 from Common.DrawGraph import DrawGraph
-from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors
+from Common.GraphUtilities import *
+from DiffusionModels.IndependentCascade import IndependentCascadeWithMonitors, GetInfectedSubgraphs
+from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery, ExpandGraph
 from Monitoring.MonitorPlacement.Monitor import PlaceMonitors
 from Monitoring.MonitorPlacement.MonitorUtility import PrintCascadeResults, GatherCascadeResults
-from GraphRecovery.GraphRecoverer import InfluentialNodeRecovery
+from Monitoring.SourceIdentification.SourceIdentificator import IdentifySources
 from Test.Common.DatasetGenerator import GenerateRandomGraphTriple
 from Test.Common.DatasetReader import WriteGraphTriple, ReadGraphTriple
 from Test.Common.DistributionFunctions import *
-from Test.Common.HidingFunctions import *
-from Common.GraphUtilities import *
-from Test.Common.WeightGenerator import EWeightSetterFunction
-from Common.ColorPrints import bcolors, cprint, fprint
 from Test.Common.GraphGenerator import EGraphGenerationFunction
+from Test.Common.HidingFunctions import *
+from Test.Common.WeightGenerator import EWeightSetterFunction
 from definitions import ROOT_DIR
+
+
+def all_pairs_dijkstra_path_length(Graph, cutoff=None, weight="weight"):
+    length = single_source_dijkstra_path_length
+    return {n: length(Graph, n, cutoff=cutoff, weight=weight) for n in Graph}
 
 
 class MonitorTestReport:
@@ -115,6 +120,70 @@ class MonitorTestReport:
         raise NotImplementedError
 
 
+class SourceIdentificationTestReport:
+    def __init__(self):
+        self.VIRTUAL_SOURCES = 0
+        self.NUM_EST_SOURCES_FULL = 0
+        self.NUM_EST_SOURCES_PART = 0
+        self.NUM_EST_SOURCES_RECV = 0
+        self.TP_FULL = 0
+        self.TP_PART = 0
+        self.TP_RECV = 0
+        self.FP_FULL = 0
+        self.FP_PART = 0
+        self.FP_RECV = 0
+        self.FN_FULL = 0
+        self.FN_PART = 0
+        self.FN_RECV = 0
+        self.FULL_DISTANCE_0 = 0
+        self.PART_DISTANCE_0 = 0
+        self.RECV_DISTANCE_0 = 0
+        self.FULL_DISTANCE_1 = 0
+        self.PART_DISTANCE_1 = 0
+        self.RECV_DISTANCE_1 = 0
+        self.FULL_DISTANCE_2 = 0
+        self.PART_DISTANCE_2 = 0
+        self.RECV_DISTANCE_2 = 0
+        self.FULL_DISTANCE_3 = 0
+        self.PART_DISTANCE_3 = 0
+        self.RECV_DISTANCE_3 = 0
+        self.FULL_DISTANCE_4 = 0
+        self.PART_DISTANCE_4 = 0
+        self.RECV_DISTANCE_4 = 0
+        self.FULL_DISTANCE_5 = 0
+        self.PART_DISTANCE_5 = 0
+        self.RECV_DISTANCE_5 = 0
+        self.FULL_DISTANCE_6 = 0
+        self.PART_DISTANCE_6 = 0
+        self.RECV_DISTANCE_6 = 0
+
+    @staticmethod
+    def aggregate_results(results: list):
+
+        # Purge None values from the list
+        new_results = []
+        for result in results:
+            if result is not None:
+                new_results.append(result)
+
+        agg_res = {}
+
+        for key in vars(new_results[0]).keys():
+            if type(vars(new_results[0])[key]) is not int and type(vars(new_results[0])[key]) is not float:
+                continue
+            values = []
+            for res in new_results:
+                values.append(vars(res)[key])
+            if len(values) > 1:
+                if "DISTANCE" in key:
+                    agg_res[key] = (round(statistics.mean(values), 2), statistics.stdev(values))
+                else:
+                    agg_res[key] = (round(statistics.mean(values), 1), statistics.stdev(values))
+            else:
+                agg_res[key] = (values[0], 0)
+        return agg_res
+
+
 class MonitorTester:
 
     # Common test config
@@ -170,18 +239,20 @@ class MonitorTester:
 
         return full, part, recv
 
-    def get_real_dataset_triple(self, path):
-        full = networkx.read_edgelist(path, create_using=networkx.DiGraph, nodetype=int)
+    def get_real_dataset_triple(self, path, theta=None):
+        full = networkx.read_edgelist(path, create_using=networkx.DiGraph if self.WEIGHT_KWARGS["directed"] else networkx.Graph, nodetype=int)
         self.NUM_NODES = full.number_of_nodes()
         nth = self.DISTRIBUTION.value["function"](full, self.NUM_TO_HIDE)
         part = self.CLOSURE.value["function"](full.copy(), nth)
-        recv, _ = InfluentialNodeRecovery(part, self.NUM_TO_HIDE, 2)
+        if theta is None:
+            recv, _ = InfluentialNodeRecovery(part, self.NUM_TO_HIDE, 2)
+        else:
+            recv, _ = ExpandGraph(part, self.NUM_TO_HIDE, theta)
+        print("done")
         return full, part, recv
 
-    def perform_test(self, full, part, recv):
-
+    def test_setup(self, full, part, recv):
         # Generate the weights for the full graph
-        cprint(bcolors.OKGREEN, "Setting weights...")
         self.WEIGHT.value["function"](full, attribute="weight", force=True, **self.WEIGHT_KWARGS)
         # Copy the weights to the other two graphs
         SetSameWeightsToOtherGraphs(full, [part, recv])
@@ -190,7 +261,6 @@ class MonitorTester:
         self.WEIGHT.value["function"](recv, attribute="weight", force=False, **self.WEIGHT_KWARGS)
 
         # Choose sources and targets (they have to be in all 3 graphs)
-        cprint(bcolors.OKGREEN, "Choosing targets...")
         valid_nodes = set(part.nodes())
 
         if len(valid_nodes) < self.NUM_SOURCES + self.NUM_TARGETS:
@@ -198,25 +268,173 @@ class MonitorTester:
                   f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
             return
 
-            # raise ValueError(f"Cannot continue with the algorithm, as there are not enough nodes in partial graph to "
-            #                  f"select {self.NUM_SOURCES} sources and {self.NUM_TARGETS} targets")
-
         sources = list(random.sample(list(valid_nodes), self.NUM_SOURCES))
         for src in sources:
             valid_nodes.remove(src)
         targets = list(random.sample(list(valid_nodes), self.NUM_TARGETS))
-        cprint(bcolors.OKGREEN, "Set sources and targets. Computing the virtual nodes set...")
 
         # Compute the set of virtual nodes
         # virtual_set = GetVirtualNodesByDifference(part, recv)
         virtual_set = GetVirtualNodesByNodeLabel(recv, "RECV")
 
+        return sources, targets, virtual_set
+
+    def perform_source_identification_test(self, full, part, recv):
+        print("started task")
+        real_sources, _, virtual_set = self.test_setup(full, part, recv)
+
+        source_boost = full.number_of_nodes() / (full.number_of_nodes() - len(virtual_set))
+        cprint(bcolors.OKCYAN, "Boosting source identification by a factor of: ", source_boost)
+
+        # infected_nodes_full = IndependentCascadeWithMonitors(full, real_sources, [], 8)
+        # infected_nodes_part = IndependentCascadeWithMonitors(part, real_sources, [], 8)
+        # infected_nodes_recv = IndependentCascadeWithMonitors(recv, real_sources, [], 8)
+
+        infected_full = IndependentCascadeWithMonitors(full, seeds=real_sources, monitors=[], steps=20)
+        infected_part = IndependentCascadeWithMonitors(part, seeds=real_sources, monitors=[], steps=20)
+        infected_recv = IndependentCascadeWithMonitors(recv, seeds=real_sources, monitors=[], steps=20)
+
+        flat_full = set()
+        for lis in infected_full:
+            flat_full = flat_full.union(lis)
+
+        flat_part = set()
+        for lis in infected_part:
+            flat_part = flat_part.union(lis)
+
+        flat_recv = set()
+        for lis in infected_recv:
+            flat_recv = flat_recv.union(lis)
+
+        # flat_full = AdaptiveIntervalCascade(full, real_sources, steps=1000, full_intervals=[75, 150], max_iterations=100, return_interval=False)
+        # flat_part = AdaptiveIntervalCascade(part, real_sources, steps=1000, full_intervals=[75, 150], max_iterations=100, return_interval=False)
+        # flat_recv = AdaptiveIntervalCascade(recv, real_sources, steps=1000, full_intervals=[75, 150], max_iterations=100, return_interval=False)
+
+        inf_subgraph_full = GetInfectedSubgraphs(full, flat_full)
+        inf_subgraph_part = GetInfectedSubgraphs(part, flat_part)
+        inf_subgraph_recv = GetInfectedSubgraphs(recv, flat_recv)
+
+        est_sources_full, _ = IdentifySources(full, len(real_sources), inf_subgraph_full)
+        est_sources_part, _ = IdentifySources(part, len(real_sources), inf_subgraph_part)
+        est_sources_recv, discarded = IdentifySources(recv, int(source_boost * len(real_sources)), inf_subgraph_recv, virtual_set=virtual_set)
+
+        if len(est_sources_full) == 0 or len(est_sources_part) == 0 or len(est_sources_recv) == 0:
+            cprint(bcolors.FAIL, "DISCARDING RESULT")
+            return None
+
+        # Result gathering
+        results = SourceIdentificationTestReport()
+        results.NUM_EST_SOURCES_FULL = len(est_sources_full)
+        results.NUM_EST_SOURCES_PART = len(est_sources_part)
+        results.NUM_EST_SOURCES_RECV = len(est_sources_recv)
+        results.VIRTUAL_SOURCES = discarded
+
+        for node in est_sources_full:
+            if node in real_sources:
+                results.TP_FULL += 1
+            else:
+                results.FP_FULL += 1
+
+        for node in est_sources_part:
+            if node in real_sources:
+                results.TP_PART += 1
+            else:
+                results.FP_PART += 1
+
+        for node in est_sources_recv:
+            if node in real_sources:
+                results.TP_RECV += 1
+            else:
+                results.FP_RECV += 1
+
+        for node in real_sources:
+            if node not in est_sources_full:
+                results.FN_FULL += 1
+            if node not in est_sources_part:
+                results.FN_PART += 1
+            if node not in est_sources_recv:
+                results.FN_RECV += 1
+
+        # Distance measurements
+        print("Measuring distances...")
+        full_distance_dict = {}
+        for est_source in est_sources_full:
+            full_distance_dict[est_source] = GetDistanceToClosestRealSource(full, est_source, real_sources)
+        for num in range(7):
+            results.__setattr__("FULL_DISTANCE_" + str(num), operator.countOf(full_distance_dict.values(), num))
+
+        part_distance_dict = {}
+        for est_source in est_sources_part:
+            part_distance_dict[est_source] = GetDistanceToClosestRealSource(part, est_source, real_sources)
+        for num in range(7):
+            results.__setattr__("PART_DISTANCE_" + str(num), operator.countOf(part_distance_dict.values(), num))
+
+        recv_distance_dict = {}
+        for est_source in est_sources_recv:
+            recv_distance_dict[est_source] = GetDistanceToClosestRealSource(recv, est_source, real_sources)
+        for num in range(7):
+            results.__setattr__("RECV_DISTANCE_" + str(num), operator.countOf(recv_distance_dict.values(), num))
+        print("Done measuring!")
+
+        """
+        print("Measuring Distances...")
+        dst_full = all_pairs_dijkstra_path_length(full.to_undirected())
+
+        avg = 0
+        for est_source in est_sources_full:
+            min_dst = 1000
+            for real_source in real_sources:
+                if est_source in dst_full and real_source in dst_full[est_source]:
+                    dst = dst_full[est_source][real_source]
+                    if dst < min_dst:
+                        min_dst = dst
+            avg += dst
+        results.FULL_DISTANCE = round(avg / len(real_sources), 1)
+
+        print("Full distances measured...")
+
+        dst_part = all_pairs_dijkstra_path_length(part.to_undirected())
+        avg = 0
+        for est_source in est_sources_part:
+            min_dst = 1000
+            for real_source in real_sources:
+                if est_source in dst_part and real_source in dst_part[est_source]:
+                    dst = dst_part[est_source][real_source]
+                    if dst < min_dst:
+                        min_dst = dst
+            avg += dst
+        results.PART_DISTANCE = round(avg / len(real_sources), 1)
+
+        print("Part distances measured...")
+
+        dst_recv = all_pairs_dijkstra_path_length(recv.to_undirected())
+        avg = 0
+        for est_source in est_sources_recv:
+            min_dst = 1000
+            for real_source in real_sources:
+                if est_source in dst_recv and real_source in dst_recv[est_source]:
+                    dst = dst_recv[est_source][real_source]
+                    if dst < min_dst:
+                        min_dst = dst
+            avg += dst
+        results.RECV_DISTANCE = round(avg / len(real_sources), 1)
+
+        print("Recv distances measured...")
+        """
+
+        return results
+
+
+    def perform_test(self, full, part, recv):
+
+        sources, targets, virtual_set = self.test_setup(full, part, recv)
+
         # Place the monitors on the 3 graphs
         cprint(bcolors.OKGREEN, "Running monitor placement...")
 
         # Run the monitor placement algorithm on all the 3 graphs
-        monitors_full, _ = PlaceMonitors(full, sources, targets, c_nodes=self.CNODES, verbose=True)
-        monitors_part, _ = PlaceMonitors(part, sources, targets, c_nodes=self.CNODES, verbose=True)
+        monitors_full, _ = PlaceMonitors(full, sources, targets, c_nodes=20, verbose=True)
+        monitors_part, _ = PlaceMonitors(part, sources, targets, c_nodes=20, verbose=True)
         monitors_recv, _ = PlaceMonitors(recv, sources, targets, c_nodes=self.CNODES, virtual_set=virtual_set, verbose=True)
 
         # Test the monitor placement by running the independent cascade on all three
@@ -313,12 +531,9 @@ class MonitorTester:
                     sources_recv = sources
                     recv_done = True
 
-        monitors_full, _ = PlaceMonitors(full, sources_full, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                         verbose=True)
-        monitors_part, _ = PlaceMonitors(part, sources_part, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                         verbose=True)
-        monitors_recv, _ = PlaceMonitors(recv, sources_recv, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                         virtual_set=virtual_set, verbose=True)
+        monitors_full, _ = PlaceMonitors(full, sources_full, targets, verbose=True, c_nodes=100)
+        monitors_part, _ = PlaceMonitors(part, sources_part, targets, verbose=True, c_nodes=100)
+        monitors_recv, _ = PlaceMonitors(recv, sources_recv, targets, virtual_set=virtual_set, c_nodes=100, verbose=True)
 
         ic_res = IndependentCascadeWithMonitors(full, sources, monitors_full, 100)
         cascade_results = GatherCascadeResults(ic_res, full, sources, targets, [])
@@ -397,8 +612,7 @@ class MonitorTester:
             virtual_set = GetVirtualNodesByNodeLabel(recv, "RECV")
 
             if not full_done:
-                monitors_full, _ = PlaceMonitors(full, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                                verbose=True)
+                monitors_full, _ = PlaceMonitors(full, sources, targets, c_nodes=100, verbose=True)
                 if len(monitors_full) >= num_monitors:
                     sources_full = sources.copy()
                     full_done = True
@@ -406,16 +620,14 @@ class MonitorTester:
 
 
             if not part_done:
-                monitors_part, _ = PlaceMonitors(part, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                                verbose=True)
+                monitors_part, _ = PlaceMonitors(part, sources, targets, c_nodes=100, verbose=True)
                 if len(monitors_part) >= num_monitors:
                     sources_part = sources.copy()
                     part_done = True
                     print("part done! with", len(sources_part))
 
             if not recv_done:
-                monitors_recv, _ = PlaceMonitors(recv, sources, targets, delta=1, tau=0.1, cascade_iterations=100,
-                                                virtual_set=virtual_set, verbose=True)
+                monitors_recv, _ = PlaceMonitors(recv, sources, targets, c_nodes=100, virtual_set=virtual_set, verbose=True)
                 if len(monitors_recv) >= num_monitors:
                     sources_recv = sources.copy()
                     recv_done = True
@@ -522,14 +734,14 @@ class MonitorTester:
         mtr.CASCADE_ITERATIONS_FP = res_fp["num_of_iterations"]
         mtr.CASCADE_ITERATIONS_RR = res_rr["num_of_iterations"]
         mtr.CASCADE_ITERATIONS_FR = res_fr["num_of_iterations"]
-        # Nodes saved per monitor
+        # # Nodes saved per monitor
         mtr.FULL_NODES_SAVED_PER_MONITOR = round((mtr.NUM_NODES_FULL - mtr.NUM_INFECTED_FF) / mtr.NUM_MONITORS_FULL, 3)
         mtr.PART_NODES_SAVED_PER_MONITOR = round((mtr.NUM_NODES_PART - mtr.NUM_INFECTED_FP) / mtr.NUM_MONITORS_PART, 3)
         mtr.RECV_NODES_SAVED_PER_MONITOR = round((mtr.NUM_NODES_RECV - mtr.NUM_INFECTED_FR) / mtr.NUM_MONITORS_RECV, 3)
         # Targets saved per monitor
-        mtr.FULL_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FF) / mtr.NUM_MONITORS_FULL, 3)
-        mtr.PART_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FP) / mtr.NUM_MONITORS_PART, 3)
-        mtr.RECV_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FR) / mtr.NUM_MONITORS_RECV, 3)
+        mtr.FULL_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FF) / mtr.NUM_MONITORS_FULL, 6)
+        mtr.PART_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FP) / mtr.NUM_MONITORS_PART, 6)
+        mtr.RECV_NODES_SAVED_PER_MONITOR = round((mtr.NUM_TARGETS - mtr.INFECTED_TARGETS_FR) / mtr.NUM_MONITORS_RECV, 6)
 
         return mtr
 
@@ -697,7 +909,7 @@ def parallel_test_repeat(mt: MonitorTester):
         "PATH": mt.DATASET_PATH,
         "FOLDER": mt.FOLDER,
         "FILENAME": f"test_{i}_on_index_{mt.TRIPLE_INDEX}.txt"
-    }) for i in range(50))
+    }) for i in range(40))
 
     agg_results = MonitorTestReport.aggregate_results(results)
     for key in agg_results:
@@ -712,7 +924,7 @@ def parallel_test_repeat(mt: MonitorTester):
 def real_dataset_test():
     mt = MonitorTester()
     mt.TRIPLE_INDEX = -1
-    mt.NUM_TO_HIDE = 750
+    mt.NUM_TO_HIDE = 1000
     mt.NUM_SOURCES = 100
     mt.NUM_TARGETS = 20
     mt.GENERATION = EGraphGenerationFunction.ERealGraph
@@ -722,13 +934,12 @@ def real_dataset_test():
     mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
     mt.DISTRIBUTION_KWARGS = {}
     mt.WEIGHT = EWeightSetterFunction.EInDegreeWeights
-    # mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
-    mt.WEIGHT_KWARGS = {}
+    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1, "directed": True}
     mt.DATASET_PATH = ROOT_DIR + "/Datasets"
     mt.FOLDER = "Real"
     mt.PRINT_TO_FILE = None
     mt.TEST_PARAMS = ""
-    f, p, r = mt.get_real_dataset_triple(os.path.join(mt.DATASET_PATH, "Real", "Wiki-Vote.txt"))
+    f, p, r = mt.get_real_dataset_triple(os.path.join(mt.DATASET_PATH, "Real", "facebook_combined.txt"))
     return mt, f, p, r
 
 
@@ -742,42 +953,149 @@ def parallel_real_test_repeat():
         print(key, agg_results[key])
 
 
-if __name__ == "__main__":
-    parallel_real_test_repeat()
-
-    """
+def parallel_si_test_repeat():
     mt = MonitorTester()
     mt.TRIPLE_INDEX = -1
-    mt.NUM_NODES = 150  # 250
-    mt.NUM_TO_HIDE = 50  # 20
-    mt.NUM_SOURCES = 10
-    mt.NUM_TARGETS = 10
-    mt.GENERATION = EGraphGenerationFunction.ECorePeripheryDirectedGraph
+    mt.NUM_TO_HIDE = 750
+    mt.NUM_SOURCES = 20
+    mt.NUM_TARGETS = 20
+    mt.GENERATION = EGraphGenerationFunction.ERandomSparseDirectedGraph
     mt.GENERATION_KWARGS = {}
     mt.CLOSURE = EClosureFunction.ETotalClosure
     mt.CLOSURE_KWARGS = {}
     mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
     mt.DISTRIBUTION_KWARGS = {}
-    mt.WEIGHT = EWeightSetterFunction.EUniformWeights
-    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
+    mt.WEIGHT = EWeightSetterFunction.EInDegreeWeights
+    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 1, "directed": True}
     mt.DATASET_PATH = ROOT_DIR + "/Datasets"
     mt.FOLDER = "Synthetic"
     mt.PRINT_TO_FILE = None
     mt.TEST_PARAMS = ""
 
-    full, part, recv = GenerateRandomGraphTriple(
-        mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["function"], mt.GENERATION_KWARGS, mt.DISTRIBUTION.value["function"],
-        mt.DISTRIBUTION_KWARGS, mt.CLOSURE.value["function"], mt.CLOSURE_KWARGS, None, "deg", False)
+    # full, part, recv = mt.read_synthetic_dataset(path=mt.DATASET_PATH, folder=mt.FOLDER, index=496)  #525, 43.2, 45.6
+    # full, part, recv = mt.generate_synthetic_dataset()
+    import os
+    # full, part, recv = mt.get_real_dataset_triple(os.path.join(mt.DATASET_PATH, "Real", "as_route_views.txt"))
+    full, part, recv = mt.get_real_dataset_triple(os.path.join(mt.DATASET_PATH, "Real", "email-Eu-core.txt"))
+    # theta = np.array([[0.58716, 0.375428], [0.34779, 0.790919]])
 
-    index = WriteGraphTriple(mt.DATASET_PATH, mt.FOLDER, GenerateGraphFilename(
-            mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["short_name"],
-            mt.DISTRIBUTION.value["short_name"], mt.CLOSURE.value["short_name"],
-            mt.WEIGHT.value["short_name"]), full, part, recv)
+    print("Ended recovery")
 
-    mt.TRIPLE_INDEX = index
+    # Main call for parallelization.
+    results = Parallel(n_jobs=10)(delayed(mt.perform_source_identification_test)(full, part, recv) for _ in range(10))
 
-    parallel_test_repeat(mt)
+    # Result aggregation and print
+    agg_results = SourceIdentificationTestReport.aggregate_results(results)
+
+    array = []
+    for key in agg_results:
+        array.append(agg_results[key])
+        print(key, agg_results[key])
+
+    import pandas as pd
+    import os
+
+    df = pd.DataFrame(array).T
+    file = "F:\Backup\Projects\PyCharm\Thesis\ThesisProject\Test\SourceIdentification\Result.xlsx"
+    os.remove(file)
+    df.to_excel(excel_writer=file)
+    os.startfile(file)
+
+
+def parallel_main_test_repeat():
+    mt = MonitorTester()
+    mt.TRIPLE_INDEX = -1
+    mt.NUM_TO_HIDE = 10
+    mt.NUM_SOURCES = 20
+    mt.NUM_TARGETS = 20
+    mt.GENERATION = EGraphGenerationFunction.ERandomSparseDirectedGraph
+    mt.GENERATION_KWARGS = {}
+    mt.CLOSURE = EClosureFunction.ETotalClosure
+    mt.CLOSURE_KWARGS = {}
+    mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
+    mt.DISTRIBUTION_KWARGS = {}
+    mt.WEIGHT = EWeightSetterFunction.EInDegreeWeights
+    mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1, "directed": True}
+    mt.DATASET_PATH = ROOT_DIR + "/Datasets"
+    mt.FOLDER = "Synthetic"
+    mt.PRINT_TO_FILE = None
+    mt.TEST_PARAMS = ""
+
+    mt.CNODES = 10
+
+    full, part, recv = mt.generate_synthetic_dataset()
+
+    # Main call for parallelization.
+    results = Parallel(n_jobs=10)(delayed(mt.perform_test)(full, part, recv) for _ in range(30))
+
+    # Result aggregation and print
+    agg_results = MonitorTestReport.aggregate_results(results)
+
+    array = []
+    for key in agg_results:
+        array.append(agg_results[key])
+        print(key, agg_results[key])
+
+    # import pandas as pd
+    # import os
+    #
+    # df = pd.DataFrame(array).T
+    # file = f"F:\Backup\Projects\PyCharm\Thesis\ThesisProject\Test\SourceIdentification\Result{mt.CNODES}.xlsx"
+    # os.remove(file)
+    # df.to_excel(excel_writer=file)
+    # os.startfile(file)
+
+
+
+if __name__ == "__main__":
+
+    import atexit
+
+    def exit_handler():
+        import winsound
+        winsound.Beep(1000, 1000)
+
+    atexit.register(exit_handler)
+
+    # parallel_real_test_repeat()
+    parallel_si_test_repeat()
+    # parallel_main_test_repeat()
+
+    # mt = MonitorTester()
+    # mt.TRIPLE_INDEX = -1
+    # mt.NUM_NODES = 150  # 250
+    # mt.NUM_TO_HIDE = 100  # 20
+    # mt.NUM_SOURCES = 10
+    # mt.NUM_TARGETS = 10
+    # mt.GENERATION = EGraphGenerationFunction.ECorePeripheryDirectedGraph
+    # mt.GENERATION_KWARGS = {}
+    # mt.CLOSURE = EClosureFunction.ECrawlerClosure
+    # mt.CLOSURE_KWARGS = {}
+    # mt.DISTRIBUTION = ENodeHidingSelectionFunction.EUniformDistribution
+    # mt.DISTRIBUTION_KWARGS = {}
+    # mt.WEIGHT = EWeightSetterFunction.EUniformWeights
+    # mt.WEIGHT_KWARGS = {"min_val": 0, "max_val": 0.1}
+    # # mt.WEIGHT_KWARGS = {}
+    # mt.DATASET_PATH = ROOT_DIR + "/Datasets"
+    # mt.FOLDER = "Synthetic"
+    # mt.PRINT_TO_FILE = None
+    # mt.TEST_PARAMS = ""
+    #
+    # full, part, recv = GenerateRandomGraphTriple(
+    #     mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["function"], mt.GENERATION_KWARGS, mt.DISTRIBUTION.value["function"],
+    #     mt.DISTRIBUTION_KWARGS, mt.CLOSURE.value["function"], mt.CLOSURE_KWARGS, None, "deg", False)
+    #
+    # index = WriteGraphTriple(mt.DATASET_PATH, mt.FOLDER, GenerateGraphFilename(
+    #         mt.NUM_NODES, mt.NUM_TO_HIDE, mt.GENERATION.value["short_name"],
+    #         mt.DISTRIBUTION.value["short_name"], mt.CLOSURE.value["short_name"],
+    #         mt.WEIGHT.value["short_name"]), full, part, recv)
+    #
+    # mt.TRIPLE_INDEX = index
+
+    # parallel_test_repeat(mt)
+
+
     # mt.perform_fixed_monitors_test(full, part, recv, 30)
-    """
+
 
 

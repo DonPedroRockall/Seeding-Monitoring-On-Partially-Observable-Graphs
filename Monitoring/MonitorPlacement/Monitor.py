@@ -27,8 +27,12 @@ def PlaceMonitors(graph, sources, targets, c_nodes, virtual_set=[], verbose=Fals
         cprint(bcolors.OKGREEN, "TARGET =", targets)
 
     # G_contracted, c_source, c_target = SourceContraction(graph.copy(), sources, targets)
+    if graph.is_directed():
+        new_graph = graph.copy()
+    else:
+        new_graph = graph.to_directed()
 
-    G_contracted, c_source = ContractGraph(graph.copy(), sources)
+    G_contracted, c_source = ContractGraph(new_graph, sources)
     G_contracted, c_target = ContractGraph(G_contracted.copy(), targets)
 
     G_m_test_contracted = G_contracted.copy()
@@ -71,7 +75,7 @@ if __name__ == "__main__":
         data["weight"] = val
         data["capacity"] = val
 
-    monitors, num_of_infected = PlaceMonitors(g.copy(), sources, targets, verbose=True)
+    monitors, num_of_infected = PlaceMonitors(g.copy(), sources, targets, verbose=False)
     infected = list()
 
     color_dict = dict()

@@ -1,6 +1,25 @@
 import networkx as nx
 
-from Common.ColorPrints import cprint, bcolors
+
+def GetDistanceToClosestRealSource(graph: nx.DiGraph, est_source, real_sources, max_distance=4):
+    queue = [est_source]
+    cur_distance = 0
+    visited = {est_source}
+    next_set = set()
+
+    while len(queue) > 0:
+        curnode = queue.pop()
+        if curnode in real_sources:
+            return cur_distance
+        for neigh in graph.neighbors(curnode):
+            if neigh not in visited:
+                next_set.add(neigh)
+        if len(queue) == 0 and cur_distance <= max_distance:
+            queue.extend(next_set)
+            cur_distance += 1
+
+    return max_distance + 1
+
 
 
 def GetVirtualNodesByDifference(part: nx.DiGraph, recv: nx.DiGraph):

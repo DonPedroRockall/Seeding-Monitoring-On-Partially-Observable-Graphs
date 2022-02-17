@@ -6,6 +6,8 @@ import random
 import string
 import sys
 
+from Common.ColorPrints import cprint, bcolors
+
 
 def random_string(L=15, seed=None):
     random.seed(seed)
@@ -367,7 +369,7 @@ class CameriniAlgorithm:
         roots = []
         nodes = branching.nodes()
         if len(nodes) == 1:
-            return nodes[0]
+            return list(nodes)[0]
         for node in branching.nodes():
             in_neigh = branching.in_edges([node])
             # print("IN NEIGH", in_neigh, in_neigh == [], len(in_neigh) == 0)
@@ -376,7 +378,7 @@ class CameriniAlgorithm:
                 roots.append(node)
         return roots
 
-    def find_roots_branching(self, k, root='R', scores=False, subgraphs=None):
+    def find_roots_branching(self, k, root='R', scores=False, subgraphs=None, bcolor=None):
         if subgraphs is not None:
             scores = {}
             if len(subgraphs) >= k:
@@ -395,7 +397,6 @@ class CameriniAlgorithm:
                     root_ = root_[0]
                     score = self.get_graph_score(arborescence)
                     scores[root_] = {'score': score, 'arborescence': arborescence}
-
             else:
                 subgraphs_and_shares = [[subgraph, self.get_graph_score(subgraph), int(k / len(subgraphs)) if len(subgraph.edges()) != 0 else 1] for subgraph in subgraphs]
                 subgraphs_and_shares.sort(key=lambda x: x[1], reverse=True)
@@ -412,9 +413,16 @@ class CameriniAlgorithm:
                         scores[list(elem[0].nodes())[0]] = {'score': 0, 'arborescence': nx.DiGraph()}
                         continue
                     self._init(elem[0])
+
                     if elem[2] > 1:
                         roots = set()
+
+                        # Added code to avoid stalling
+                        void_iterations = 0
+                        prev_size = 0
+
                         while len(roots) < elem[2]:
+
                             for root_ in roots:
                                 # for u,v,data in elem[0].in_edges([root_], data=True):
                                 # 	data[self.attr] = -1000
@@ -450,7 +458,19 @@ class CameriniAlgorithm:
                                     # return roots_score[:k]
                                     return roots
 
-                            roots.update(roots_)
+                            if type(roots_) is int:
+                                roots.update([roots_])
+                            else:
+                                roots.update(roots_)
+
+                            if len(roots) == prev_size:
+                                void_iterations += 1
+                            else:
+                                void_iterations = 0
+                            if void_iterations >= 50:
+                                cprint(bcolors.FAIL, "Failed to find the required number of roots")
+                                break
+
                             # print('Roots', roots, 'n_roots', str(len(roots)))
                             for root_ in roots:
                                 scores[root_] = {'descr': 'rm roots', 'score': 0, 'arborescence': nx.DiGraph()}
